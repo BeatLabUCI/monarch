@@ -109,13 +109,13 @@ def grow(model):
     f_g_old = model.growth.f_g[model.growth.i_g - 1, :, :]
 
     # Get change in growth tensor
-    if model.growth.type == "isotropic":
+    if model.growth.type == "isotropic_oomen":
         f_g = fg_isotropic(model, f_g_old, dt)
-    elif model.growth.type == "transverse":
+    elif model.growth.type == "transverse_witzenburg":
         f_g = fg_transverse(model, f_g_old, dt)
-    elif model.growth.type == "transverse_goktepe":
+    elif model.growth.type == "transverse_jones":
         f_g = fg_transverse_goktepe(model, f_g_old, dt)
-    elif model.growth.type == "isotropic_goktepe":
+    elif model.growth.type == "isotropic_jones":
         f_g = fg_isotropic_goktepe(model, f_g_old, dt)
     elif model.growth.type == "transverse_hybrid":
         f_g = fg_hybrid(model, f_g_old, dt)
@@ -173,7 +173,7 @@ def fg_isotropic(model, f_g, dt):
 
 def fg_transverse(model, f_g, dt):
     """
-    Determine transversely isotropic growth tensor based on Witzenburg 2021
+    Determine transversely isotropic growth tensor based on Witzenburg & Holmes 2021
     """
 
     # Calculate maximum Green-Lagrange strain time history
@@ -222,7 +222,7 @@ def fg_transverse(model, f_g, dt):
 
 def fg_transverse_goktepe(model, f_g_old, dt):
     """
-    Determine transversely isotropic growth tensor based on Göktepe 2010
+    Determine transversely isotropic growth tensor from Jones & Oomen, 2024
     """
 
     # Get mechanics
@@ -273,9 +273,10 @@ def fg_transverse_goktepe(model, f_g_old, dt):
 
     return f_g
 
+
 def fg_isotropic_goktepe(model, f_g_old, dt):
     """
-    Determine isotropic growth tensor based on Göktepe 2010
+    Determine isotropic growth tensor based on Jones & Oomen, 2024
     """
 
     # Get mechanics
@@ -315,7 +316,8 @@ def fg_isotropic_goktepe(model, f_g_old, dt):
 
 
 def fg_hybrid(model, f_g_old, dt):
-    """Hybrid growth law: sigmoid growth rate function with growth limiter based on total growth"""
+    """Hybrid growth law between the Witzenburg and Jones & Oomen laws: sigmoid growth rate function with growth limiter
+    based on total growth"""
 
     # Get mechanics
     lab_f_max = model.growth.lab_f_max[0:model.growth.i_g, :]

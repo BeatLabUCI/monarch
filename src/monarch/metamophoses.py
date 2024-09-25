@@ -10,7 +10,7 @@ import pathlib
 from .utils import get_valve_events
 
 
-def pv_loop(model, x_lim=None, y_lim=None, compartments=(2, ), legend=None, cmap="cubehelix", fig_size=(6.0, 4.5),
+def pv_loop(model, x_lim=None, y_lim=None, compartments=("LV", ), legend=True, cmap="cubehelix", fig_size=(6.0, 4.5),
             show_fig=True, file_type="pdf", file_path=None, file_name="pvloop"):
     """Plot pressure-volume loops from a simulation file"""
 
@@ -18,10 +18,12 @@ def pv_loop(model, x_lim=None, y_lim=None, compartments=(2, ), legend=None, cmap
     n_compartments = len(compartments)
     cmap = sns.color_palette(cmap, n_compartments, as_cmap=False)
 
+    i_compartments = [model.compartments[compartment] for compartment in compartments]
+
     # Plot pressure-volume loops
     sns.set_theme(style="white")
     fig, ax = plt.subplots(figsize=fig_size)
-    for i, compartment in enumerate(compartments):
+    for i, compartment in enumerate(i_compartments):
         ax.plot(model.volumes[:, compartment], model.pressures[:, compartment], color=cmap[i], linewidth=3)
 
     # Axes
@@ -33,13 +35,13 @@ def pv_loop(model, x_lim=None, y_lim=None, compartments=(2, ), legend=None, cmap
 
     # Add legend
     if legend:
-        ax.legend(compartment_nmbrs_to_names(model, compartments), title="", frameon=False)
+        ax.legend(compartments, title="", frameon=False)
 
     finish_plot(fig, file_path, file_name, file_type, show_fig, x_lim=x_lim, y_lim=y_lim)
 
 
-def pv_loops(models, x_lim=None, y_lim=None, compartment=2, legend=True, cmap="cubehelix", fig_size=(6.0, 4.5),
-             show_fig=True, file_type="pdf", file_path=None, file_name="pvloops", model_names=()):
+def pv_loops(models, x_lim=None, y_lim=None, compartment="LV", legend=True, cmap="cubehelix", fig_size=(6.0, 4.5),
+             show_fig=True, file_type="pdf", file_path=None, file_name="pvloops", model_names=(), var_name=""):
     """Plot pressure-volume loops from multiple simulation files"""
 
     if cmap == "cubehelix":
@@ -47,11 +49,13 @@ def pv_loops(models, x_lim=None, y_lim=None, compartment=2, legend=True, cmap="c
     else:
         cmap = sns.color_palette(cmap, as_cmap=False, n_colors=len(models))
 
+    i_compartment = models[0].compartments[compartment]
+
     # Plot pressure-volume loops
     sns.set_theme(style="white")
     fig, ax = plt.subplots(figsize=fig_size)
     for i, model in enumerate(models):
-        ax.plot(model.volumes[:, compartment], model.pressures[:, compartment], color=cmap[i], linewidth=3)
+        ax.plot(model.volumes[:, i_compartment], model.pressures[:, i_compartment], color=cmap[i], linewidth=3)
 
     # Axes
     plt.xlabel("Volume (mL)", fontsize=12)
@@ -62,7 +66,8 @@ def pv_loops(models, x_lim=None, y_lim=None, compartment=2, legend=True, cmap="c
 
     # Add legend
     if legend and (len(model_names) > 0):
-        ax.legend(model_names, title="", frameon=False)
+        # Place legend outside of plot, horizontal orientation
+        ax.legend(model_names, title=var_name, frameon=False, loc="upper left", bbox_to_anchor=(1, 1))
 
     finish_plot(fig, file_path, file_name, file_type, show_fig, x_lim=x_lim, y_lim=y_lim)
 
@@ -113,7 +118,7 @@ def pressures_volumes(model, p_lim=None, v_lim=None, compartments=(0, 1, 2, 3, 4
 
 
 def stretch(model, y_lim=None, legend=True, cmap="cubehelix", fig_size=(6.0, 4.5),
-            show_fig=True, file_type="pdf", file_path=None, file_name="strain",
+            show_fig=True, file_type="pdf", file_path=None, file_name="stretch",
             walls=(0, 1, 2), wall_avg=True, shortening=False):
     """Plot strain vs. time from a simulation file"""
 
@@ -124,6 +129,8 @@ def stretch(model, y_lim=None, legend=True, cmap="cubehelix", fig_size=(6.0, 4.5
     # Normalize based on ED frame if shortening
     if shortening:
         lab_f = model.heart.lab_f / model.heart.lab_f[model.outputs["IED"], :] - 1
+        if file_name == "stretch":
+            file_name = "shortening"
     else:
         lab_f = model.heart.lab_f
 
@@ -157,7 +164,6 @@ def stretch(model, y_lim=None, legend=True, cmap="cubehelix", fig_size=(6.0, 4.5
         line_styles = ["-", "-", "-"]
     else:
         line_styles = ["-", "--", ":"]
-    wall_names = ["LFW", "RFW", "SW"]
 
     # Patches
     for i in range(n_ventricles):
@@ -170,7 +176,7 @@ def stretch(model, y_lim=None, legend=True, cmap="cubehelix", fig_size=(6.0, 4.5
         p = []
         for i in range(3):
             p.append(ax.plot(model.time, lab_mean[:, i], color=wall_colors[i], linewidth=4, linestyle=line_styles[i],
-                     label=wall_names[i]))
+                     label=model.heart.walls[i]))
 
         # Add legend (reduce line width of each entry)
         if legend:
@@ -289,7 +295,9 @@ def plot_growth(model, outputs, units="", show_fig=True, file_type="pdf", file_p
 
 
 def plot_fg(model, walls=(0, 1, 2), show_fig=True, file_type="pdf", file_path=None, file_name="growth",
-                     ax_size=(4.0, 3.0), cmap="cubehelix"):
+            ax_size=(2.0, 1.6), cmap="cubehelix"):
+    """Plot growth tensor (F_g) during growth. When one path per wall, it combines all walls in one subplot, if more
+    patches are assigned in the same wall, it plots each wall in a separate subplot to reduce clutter"""
 
     n_patches = model.heart.n_patches_tot
 
@@ -301,74 +309,60 @@ def plot_fg(model, walls=(0, 1, 2), show_fig=True, file_type="pdf", file_path=No
     cmap = sns.color_palette(cmap, n_patches, as_cmap=False)
 
     sns.set_theme(style="white")
-    fig, ax = plt.subplots(len(walls), 4, figsize=(ax_size[0] * 4, ax_size[1] * len(walls)))
 
-    for i_p in range(n_patches):
-        if model.heart.patches[i_p] in walls:
-            for i in range(3):
-                ax[walls.index(model.heart.patches[i_p]), i].plot(model.growth.time, model.growth.f_g[:, i, i_p],
-                                                                  color=cmap[i_p], linewidth=3)
-            ax[walls.index(model.heart.patches[i_p]), 3].plot(model.growth.time, jg[:, i_p], color=cmap[i_p],
-                                                              linewidth=3)
+    # If there are more than 1 patch per wall, plot all patches in the same plot, otherwise use multiple plots
+    multiplot = len(model.heart.walls) != model.heart.patches.size
 
-    for i in range(3):
-        ax[i, 0].set_ylabel(r"$F_{g,11}$ (-)", fontsize=12)
-        ax[i, 1].set_ylabel(r"$F_{g,22}$ (-)", fontsize=12)
-        ax[i, 2].set_ylabel(r"$F_{g,33}$ (-)", fontsize=12)
-        ax[i, 3].set_ylabel(r"$J_g$ (-)", fontsize=12)
-    for i in range(4):
-        ax[-1, i].set_xlabel("Time (days)", fontsize=12)
-
-    for i in range(len(walls)):
-        for j in range(4):
-            ax[i, j].set_xlim(model.growth.time[0], model.growth.time[-1])
-
-    finish_plot(fig, file_path, file_name, file_type, show_fig)
-
-
-def plot_jg(model, walls=(0, 1, 2), mean=False, show_fig=True, file_type="pdf", file_path=None, file_name="growth",
-            ax_size=(4.0, 3.0), cmap="cubehelix"):
-
-    n_patches = model.heart.n_patches_tot
-
-    jg = np.zeros((model.growth.n_g, n_patches))
-    for i_p in range(n_patches):
-        for i_g in range(model.growth.n_g):
-            jg[i_g, i_p] = np.prod(model.growth.f_g[i_g, :, i_p])
-
-    # Calculate mean for all patches with the same value
-    jg_mean = np.zeros((model.growth.n_g, len(walls)))
-    if mean:
-        for i in range(len(walls)):
-            jg_mean[:, i] = np.mean(jg[:, model.heart.patches == walls[i]], axis=1)
-
-    sns.set_theme(style="white")
-
-    if mean:
-        cmap = sns.color_palette(cmap, len(walls), as_cmap=False)
-        fig, ax = plt.subplots(figsize=(ax_size[0], ax_size[1]))
-        for i in range(len(walls)):
-            ax.plot(model.growth.time, jg_mean[:, i], color=cmap[i], linewidth=3)
-        ax.set_ylabel(r"$J_g$ (-)", fontsize=12)
-        ax.set_xlabel("Time (days)", fontsize=12)
-        ax.set_xlim(model.growth.time[0], model.growth.time[-1])
-        ax.legend(["Wall: " + str(wall) for wall in walls], title="", frameon=False)
-
-    else:
-        cmap = sns.color_palette(cmap, n_patches, as_cmap=False)
-        fig, ax = plt.subplots(1, len(walls), figsize=(ax_size[0] * len(walls), ax_size[1]))
+    if multiplot:
+        fig, ax = plt.subplots(3, len(walls), figsize=(ax_size[0] * len(walls), ax_size[1] * 3),
+                               sharey=True, sharex=True)
         for i_p in range(n_patches):
             if model.heart.patches[i_p] in walls:
-                ax[walls.index(model.heart.patches[i_p])].set_title("Wall: " + str(model.heart.patches[i_p]))
-                ax[walls.index(model.heart.patches[i_p])].plot(model.growth.time, jg[:, i_p], color=cmap[i_p], linewidth=3)
+                for i in [0, 2]:
+                    ax[int(i*0.5), walls.index(model.heart.patches[i_p])].plot(
+                        model.growth.time, model.growth.f_g[:, i, i_p], color=cmap[i_p], linewidth=3)
+                ax[2, walls.index(model.heart.patches[i_p])].plot(model.growth.time, jg[:, i_p], color=cmap[i_p],
+                                                                  linewidth=3)
 
-        # Only first plot
-        ax[0].set_ylabel(r"$J_g$ (-)", fontsize=12)
-
-        # All plots
         for i in range(len(walls)):
+            ax[0, i].set_title(model.heart.walls[walls[i]])
+
+        # Take care of axes
+        ax[0, 0].set_ylabel(r"$F_{g,11/22}$ (-)", fontsize=12)
+        ax[1, 0].set_ylabel(r"$F_{g,33}$ (-)", fontsize=12)
+        ax[2, 0].set_ylabel(r"$J_g$ (-)", fontsize=12)
+        for i in range(len(walls)):
+            ax[-1, i].set_xlabel("Time (days)", fontsize=12)
+            ax[-1, i].set_xlim(model.growth.time[0], model.growth.time[-1])
+
+    else:
+        fig, ax = plt.subplots(1, 3, figsize=(ax_size[0]*3*1.25, ax_size[1]*1.5), sharey=True, sharex=True)
+
+        for i_p in range(n_patches):
+            if model.heart.patches[i_p] in walls:
+                for i in [0, 2]:
+                    ax[int(i*0.5)].plot(
+                        model.growth.time, model.growth.f_g[:, i, i_p], color=cmap[i_p], linewidth=3)
+                ax[2].plot(model.growth.time, jg[:, i_p], color=cmap[i_p], linewidth=3)
+
+        # Take care of axes
+        ax[0].set_ylabel(r"$F_{g,11/22}$ (-)", fontsize=12)
+        ax[1].set_ylabel(r"$F_{g,33}$ (-)", fontsize=12)
+        ax[2].set_ylabel(r"$J_g$ (-)", fontsize=12)
+        for i in range(3):
             ax[i].set_xlabel("Time (days)", fontsize=12)
             ax[i].set_xlim(model.growth.time[0], model.growth.time[-1])
+
+        # Place legend outside of plot, horizontal orientation
+        ax[2].legend([model.heart.walls[walls[i]] for i in walls],
+                        title="", frameon=False, loc="upper left", bbox_to_anchor=(1, 1))
+
+    # Draw horizontal line at y=1 at each subplot, make ax 2d array if it is not
+    if len(ax.shape) == 1:
+        ax = np.array([ax])
+    for i in range(ax.shape[0]):
+        for j in range(ax.shape[1]):
+            ax[i, j].axhline(y=1, color="black", linestyle="--", linewidth=1.5, zorder=-1)
 
     finish_plot(fig, file_path, file_name, file_type, show_fig)
 

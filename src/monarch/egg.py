@@ -45,6 +45,7 @@ class Monarch(object):
         self.heart.rm = np.zeros((self.solver.n_inc, 5))  # For each wall, ventricles and atria
         self.heart.xm = np.zeros((self.solver.n_inc, 3))  # Only for ventricles
         self.heart.ys_store = np.zeros(self.solver.n_inc)  # Septal height
+        self.heart.walls = ['LFW', 'RFW', 'SW', 'LA', 'RA']
 
         # patches
         self.heart.n_patches_tot = self.heart.patches.size

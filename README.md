@@ -1,7 +1,6 @@
 <img src="monarch_logo.png" alt="drawing" width="200"/>
 
-# MONARCH
-MONARCH stands for Model for Open-source Numerical simulations of Arrhythmia, Remodeling, Cardiac mechanics, and Hypertrophy.
+MONARCH is an open-source Python package to rapidly model cardiac physiology and remodeling. It is developed by the BEAT Lab at UCI directed by Pim Oomen. MONARCH stands for Model for Open-source Numerical simulations of Arrhythmia, Remodeling, Cardiac mechanics, and Hypertrophy.
 
 
 ## Installation
@@ -11,7 +10,8 @@ It is recommended to install MONARCH in a virtual environment. To create a virtu
 conda create -n monarch python=3.12
 conda activate monarch
 ```
-### Installing using pip
+### Installing using pip (not yet available)
+
 MONARCH can be installed using pip:
 ```
 pip install monarch-beatlab

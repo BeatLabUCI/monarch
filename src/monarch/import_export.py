@@ -218,7 +218,7 @@ def export_beat_sim(model, filepath, filename):
     filepath, filename = check_file_specs(filepath, filename)
 
     with h5py.File(filepath / filename, "w") as f:
-        f.attrs["input_file"] = model.model_pars
+        f.attrs["input_file"] = str(model.model_pars)
         f.create_dataset("time", data=model.time)
         f.create_dataset("pressures", data=model.pressures)
         f.create_dataset("volumes", data=model.volumes)
