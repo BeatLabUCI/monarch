@@ -8,6 +8,7 @@ import numpy as np
 import os
 import pathlib
 from .utils import get_valve_events
+from .heart import get_wall_thickness
 
 
 def pv_loop(model, x_lim=None, y_lim=None, compartments=("LV", ), legend=True, cmap="cubehelix", fig_size=(6.0, 4.5),
@@ -401,6 +402,58 @@ def pv_loop_growth(model, show_fig=True, file_type="pdf", file_path=None, file_n
     finish_plot(fig, file_path, file_name, file_type, show_fig, x_lim=x_lim, y_lim=y_lim)
 
 
+def cardiac_geometry(model, file_path=None, file_name=None, time_frame=0, save_name="geometry",
+                     real_wall_thickness=False, show_fig=True, file_type="pdf"):
+
+    if real_wall_thickness:
+        wall_thickness, _ = get_wall_thickness(model)
+    else:
+        wall_thickness = np.array([])
+
+    # Prepare figure
+    fig, ax = plt.subplots()
+    axlim = model.heart.xm.max() * 1.1
+    plt.xlim(left=-axlim, right=axlim)
+    plt.ylim(bottom=-axlim, top=axlim)
+    ax.set_aspect('equal', adjustable='box')
+
+    # Plot ventricular geometry
+    generate_geometry(model.heart.xm[time_frame, :], model.heart.rm[time_frame, :], wall_thickness[time_frame, :], ax)
+
+    finish_plot(fig, file_path, file_name, file_type, show_fig)
+
+
+def generate_geometry(xm, rm, wall_thickness, ax, cmap="rocket"):
+
+    alpha = np.linspace(0, 2*np.pi, 1000)
+
+    cmap = sns.color_palette(cmap, 3)
+    cmap = [cmap[0], cmap[2], cmap[1]]
+
+    for wall in range(3):
+
+        xp = rm[wall]*np.cos(alpha)
+        yp = rm[wall]*np.sin(alpha)
+        if rm[wall] > 0:
+            ikeep = ((xm[wall]-rm[wall]-xp) >= 0)
+        else:
+            ikeep = ((xm[wall]-rm[wall]-xp) < 0)
+
+        # Wall arc
+        x = xm[wall]-rm[wall]-xp[ikeep]
+        y = yp[ikeep]
+        if x.size == 0:
+            x = np.array([0, 0])
+            y = np.array([-1, 1])
+
+        if np.any(wall_thickness):
+            # Real wall thickness
+            data_linewidth_plot(-x, y, ax=ax, linewidth=wall_thickness[wall], color=cmap[wall], solid_capstyle='round')
+        else:
+            # Standardized wall thickness
+            ax.plot(-x, y, label=wall, linewidth=20, color=cmap[wall], solid_capstyle='round')
+
+
 def finish_plot(fig, file_path, file_name, file_type, show_fig, set_box2=True, x_lim=None, y_lim=None):
     """Utility function to show and/or save figure; set limits; and/or set box lines"""
 
@@ -476,3 +529,34 @@ def wide2long_2vars(data1, data2, index, columns):
 
     df.insert(3, "value2", df_2['value'])
     return df
+
+
+class data_linewidth_plot():
+    def __init__(self, x, y, **kwargs):
+        self.ax = kwargs.pop("ax", plt.gca())
+        self.fig = self.ax.get_figure()
+        self.lw_data = kwargs.pop("linewidth", 1)
+        self.lw = 1
+        self.fig.canvas.draw()
+
+        self.ppd = 72./self.fig.dpi
+        self.trans = self.ax.transData.transform
+        self.linehandle, = self.ax.plot([],[],**kwargs)
+        if "label" in kwargs: kwargs.pop("label")
+        self.line, = self.ax.plot(x, y, **kwargs)
+        self.line.set_color(self.linehandle.get_color())
+        self._resize()
+        self.cid = self.fig.canvas.mpl_connect('draw_event', self._resize)
+
+    def _resize(self, event=None):
+        lw =  ((self.trans((1, self.lw_data))-self.trans((0, 0)))*self.ppd)[1]
+        if lw != self.lw:
+            self.line.set_linewidth(lw)
+            self.lw = lw
+            self._redraw_later()
+
+    def _redraw_later(self):
+        self.timer = self.fig.canvas.new_timer(interval=10)
+        self.timer.single_shot = True
+        self.timer.add_callback(lambda : self.fig.canvas.draw_idle())
+        self.timer.start()
