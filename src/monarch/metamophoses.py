@@ -355,7 +355,7 @@ def plot_fg(model, walls=(0, 1, 2), show_fig=True, file_type="pdf", file_path=No
             ax[i].set_xlim(model.growth.time[0], model.growth.time[-1])
 
         # Place legend outside of plot, horizontal orientation
-        ax[2].legend([model.heart.walls[walls[i]] for i in walls],
+        ax[2].legend([model.heart.walls[wall] for wall in walls],
                         title="", frameon=False, loc="upper left", bbox_to_anchor=(1, 1))
 
     # Draw horizontal line at y=1 at each subplot, make ax 2d array if it is not
