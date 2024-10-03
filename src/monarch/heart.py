@@ -216,15 +216,16 @@ def tension_numba(vs, ys, vml, vmr, am0, dadt):
     return tx, ty, tm, rm, xm
 
 
-def get_wall_thickness(cg):
+def get_wall_thickness(model):
     """
     Calculate the thickness and midwall reference area of each wall throughout the cardiac cycle
     """
     # Midwall area
-    lab_f_w = np.transpose(np.array([np.mean(cg.heart.lab_f[:, cg.heart.patches == i], axis=1) for i in range(0, 5)]))
-    a_m_w = cg.heart.am_ref_w * (lab_f_w ** 2)
+    lab_f_w = np.transpose(np.array([np.mean(model.heart.lab_f[:, model.heart.patches == i],
+                                             axis=1) for i in range(0, 5)]))
+    a_m_w = model.heart.am_ref_w * (lab_f_w ** 2)
     # Wall thickness
-    wall_thickness = cg.heart.vw_w / a_m_w
+    wall_thickness = model.heart.vw_w / a_m_w
     return wall_thickness, a_m_w
 
 

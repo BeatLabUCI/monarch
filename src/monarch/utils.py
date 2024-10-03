@@ -559,6 +559,19 @@ def change_pars(model, pars):
         model.heart.v_tot_0 = unloaded_heart_volume(model.heart.am_ref_w, model.heart.vw_w)
 
 
+def list_change_pars():
+    """Return list of parameters that can be changed using change_pars()"""
+    return ["sbv", "hr", "k_initial", "cvp", "cas", "cap", "cvs", "rvp", "rcs", "ras", "rvs", "rcp", "rap", "rav",
+            "rmvb", "rtvb", "sact", "sfact", "tad", "td", "tr", "c1", "c3", "c4", "tact", "sact_a", "sfact_a", "tad_a",
+            "td_a", "tr_a", "c1_a", "c3_a", "c4_a", "tact_a", "avd", "ivd_lv", "ivd_rv", "wth_p", "c1_p", "c3_p",
+            "c4_p", "prestretch", "amreflfw", "amrefrfw", "amrefsw", "amrefla", "amrefra", "vlfw", "vrfw", "vsw",
+            "vla", "vra", "fgmaxf+", "fgmaxf-", "nf+", "nf-", "s50f+", "s50f-", "fgmaxr+", "fgmaxr-", "nr+", "nr-",
+            "s50r+", "s50r-", "t_mem", "tau_f-", "tau_f_min", "tau_f+", "tau_f_max", "tau_r-", "tau_r+", "tau_r_min",
+            "tau_r_max", "theta_f_min", "theta_f_max", "theta_r_min", "theta_r_max", "gamma", "lvwv", "amrefrfwratio",
+            "amrefswratio", "amreflaratio", "amrefraratio", "rfwvratio", "swvratio", "lawvratio", "rawvratio", "lfwth",
+            "rfwth", "swth", "lawth", "rawth"]
+
+
 def get_pars(model, pars):
     """Return dictionary of values for the parameters in the list pars"""
 
@@ -750,9 +763,12 @@ def get_pars(model, pars):
 
         else:
             print(f"Parameter {par_name} not found in model")
-            values[par_name] = None
+            values[par_name] = np.nan
 
         # Restore original case of parameter names
         values = {par_orig[i]: value for i, (key, value) in enumerate(values.items())}
+
+        # Convert all values to float
+        values = {key: float(value) for key, value in values.items()}
 
     return values

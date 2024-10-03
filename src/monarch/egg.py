@@ -1,14 +1,14 @@
 import numpy as np
 import os
 from .solvers import rk4_wrapper, initialize_solvers_volumes
-from .heart import set_total_wall_volumes_areas, unloaded_heart_volume, get_wall_thickness
+from .heart import set_total_wall_volumes_areas, unloaded_heart_volume
 from .import_export import store_converged_sol, export_growth_sim, import_beat_sim, export_beat_sim, import_pars
-from .utils import get_outputs, change_pars
+from .utils import get_outputs, change_pars, get_pars
 from .growth import initialize, grow, update_circ_heart, store
 from pathlib import Path
 
 
-class Monarch(object):
+class Hatch(object):
     """
     Main class, initializing and linking all main functions
     :param model_pars: Input file containing model parameters
@@ -76,6 +76,10 @@ class Monarch(object):
     def change_pars(self, pars):
         """Change model parameters"""
         change_pars(self, pars)
+
+    def get_pars(self, pars):
+        """Get model parameter values"""
+        return get_pars(self, pars)
 
     def import_beat_sim(self, filepath, filename):
         """Import results from a previous simulation and reload class"""
