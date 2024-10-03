@@ -14,8 +14,9 @@ def clear_converged_sol():
         os.remove(f_converged_sol)
 
 
-def strain_outputs(model, outputs, time_g=0):
+def strain_outputs(model, outputs, time_g=0, dense_time_frame=50):
     """Calculate strain outputs from model"""
+
     time_events = get_valve_events(model)
     es_frame = time_events['av_closes']
     ed_frame = time_events['mv_closes']
@@ -24,27 +25,27 @@ def strain_outputs(model, outputs, time_g=0):
 
     for i in range(n_patch):
         if ed_frame < es_frame:
-            outputs[["MinSysStrain_s" + str(i)]] = np.minimum(np.min(model.heart.lab_f[:ed_frame, i]),
+            outputs["MinSysStrain_s" + str(i)] = np.minimum(np.min(model.heart.lab_f[:ed_frame, i]),
                                                           np.min(model.heart.lab_f[es_frame:, i]))
-            outputs[["MinDiaStrain_s" + str(i)]] = np.min(model.heart.lab_f[ed_frame:es_frame, i])
-            outputs[["DelSysStrain_s" + str(i)]] = np.maximum(np.max(model.heart.lab_f[:ed_frame, i]),
+            outputs["MinDiaStrain_s" + str(i)] = np.min(model.heart.lab_f[ed_frame:es_frame, i])
+            outputs["DelSysStrain_s" + str(i)] = np.maximum(np.max(model.heart.lab_f[:ed_frame, i]),
                                                           np.max(model.heart.lab_f[es_frame:, i])) - np.minimum(
                 np.min(model.heart.lab_f[:ed_frame, i]), np.min(model.heart.lab_f[es_frame:, i]))
-            outputs[["DelDiaStrain_s" + str(i)]] = np.max(model.heart.lab_f[ed_frame:es_frame, i]) - np.min(
+            outputs["DelDiaStrain_s" + str(i)] = np.max(model.heart.lab_f[ed_frame:es_frame, i]) - np.min(
                 model.heart.lab_f[ed_frame:es_frame, i])
-            outputs[["MeanSysStrain_s" + str(i)]] = (np.mean(model.heart.lab_f[:ed_frame, i]) + np.mean(
+            outputs["MeanSysStrain_s" + str(i)] = (np.mean(model.heart.lab_f[:ed_frame, i]) + np.mean(
                 model.heart.lab_f[es_frame:, i])) / 2
-            outputs[["MeanDiaStrain_s" + str(i)]] = np.mean(model.heart.lab_f[ed_frame:es_frame, i])
+            outputs["MeanDiaStrain_s" + str(i)] = np.mean(model.heart.lab_f[ed_frame:es_frame, i])
         else:
-            outputs[["MinSysStrain_s" + str(i)]] = np.min(
+            outputs["MinSysStrain_s" + str(i)] = np.min(
                 model.heart.lab_f[es_frame:ed_frame, i])
             # outputs[["MinDiaStrain_s" + str(i)]] = np.min(
             #     model.heart.lab_f[ed_frame:es_frame, i])
-            outputs[["DelSysStrain_s" + str(i)]] = np.max(
+            outputs["DelSysStrain_s" + str(i)] = np.max(
                 model.heart.lab_f[es_frame:ed_frame, i]) - np.min(model.heart.lab_f[es_frame:ed_frame, i])
             # outputs[["DelDiaStrain_s" + str(i)]] = np.max(
             #     model.heart.lab_f[ed_frame:es_frame, i]) - np.min(model.heart.lab_f[ed_frame:es_frame, i])
-            outputs[["MeanSysStrain_s" + str(i)]] = np.mean(
+            outputs["MeanSysStrain_s" + str(i)] = np.mean(
                 model.heart.lab_f[es_frame:ed_frame, i])
             # outputs[["MeanDiaStrain_s" + str(i)]] = np.mean(
             #     model.heart.lab_f[ed_frame:es_frame, i])
@@ -54,23 +55,21 @@ def strain_outputs(model, outputs, time_g=0):
         t_s10 = np.zeros(n_patch)
         t_s50 = np.zeros(n_patch)
         t_s90 = np.zeros(n_patch)
-        for n in range(49):
-            t = int((n + 1) * model.solver.n_inc / 50)
+        for n in range(dense_time_frame - 1):
+            t = int((n + 1) * model.solver.n_inc / dense_time_frame)
             if model.heart.lab_f[t, i] < (max_strain - 0.1 * del_strain) and t_s10[i] == 0:
                 t_s10[i] = n
             if model.heart.lab_f[t, i] < (max_strain - 0.5 * del_strain) and t_s50[i] == 0:
                 t_s50[i] = n
             if model.heart.lab_f[t, i] < (max_strain - 0.9 * del_strain) and t_s90[i] == 0:
                 t_s90[i] = n
-        outputs[["TS10_s" + str(i)]] = t_s10[i]
-        outputs[["TS50_s" + str(i)]] = t_s50[i]
-        outputs[["TS90_s" + str(i)]] = t_s90[i]
+        outputs["TS10_s" + str(i)] = t_s10[i]
+        outputs["TS50_s" + str(i)] = t_s50[i]
+        outputs["TS90_s" + str(i)] = t_s90[i]
 
-    strain = outputs
+    return outputs
 
-    return strain
-
-def get_outputs(model, time_g=0):
+def get_outputs(model, time_g=0, match_strain=False):
     """Collect model outputs in Pandas dataframe"""
 
     # Get valve opening and closing events and ventricle timing events (isovolumic contraction etc.)
@@ -193,7 +192,8 @@ def get_outputs(model, time_g=0):
                                  'LVEDVi', 'LVESVi', 'RVEDVi', 'RVESVi'],
                         index=[time_g])
 
-    outputs = strain_outputs(model, outputs, time_g)
+    if match_strain:
+        outputs = strain_outputs(model, outputs, time_g)
 
     return outputs
 
