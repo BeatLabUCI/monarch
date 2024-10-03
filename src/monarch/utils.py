@@ -24,11 +24,11 @@ def strain_outputs(model, outputs, time_g=0):
 
     for i in range(n_patch):
         if ed_frame < es_frame:
-            outputs[["MinSysStrain_s" + str(i)]] = np.min(np.min(model.heart.lab_f[:ed_frame, i]),
+            outputs[["MinSysStrain_s" + str(i)]] = np.minimum(np.min(model.heart.lab_f[:ed_frame, i]),
                                                           np.min(model.heart.lab_f[es_frame:, i]))
             outputs[["MinDiaStrain_s" + str(i)]] = np.min(model.heart.lab_f[ed_frame:es_frame, i])
-            outputs[["DelSysStrain_s" + str(i)]] = np.max(np.max(model.heart.lab_f[:ed_frame, i]),
-                                                          np.max(model.heart.lab_f[es_frame:, i])) - np.min(
+            outputs[["DelSysStrain_s" + str(i)]] = np.maximum(np.max(model.heart.lab_f[:ed_frame, i]),
+                                                          np.max(model.heart.lab_f[es_frame:, i])) - np.minimum(
                 np.min(model.heart.lab_f[:ed_frame, i]), np.min(model.heart.lab_f[es_frame:, i]))
             outputs[["DelDiaStrain_s" + str(i)]] = np.max(model.heart.lab_f[ed_frame:es_frame, i]) - np.min(
                 model.heart.lab_f[ed_frame:es_frame, i])
@@ -55,16 +55,16 @@ def strain_outputs(model, outputs, time_g=0):
         t_s50 = np.zeros(n_patch)
         t_s90 = np.zeros(n_patch)
         for n in range(49):
-            t = (n + 1) * model.solver.n_inc / 50
+            t = int((n + 1) * model.solver.n_inc / 50)
             if model.heart.lab_f[t, i] < (max_strain - 0.1 * del_strain) and t_s10[i] == 0:
                 t_s10[i] = n
             if model.heart.lab_f[t, i] < (max_strain - 0.5 * del_strain) and t_s50[i] == 0:
                 t_s50[i] = n
             if model.heart.lab_f[t, i] < (max_strain - 0.9 * del_strain) and t_s90[i] == 0:
                 t_s90[i] = n
-        outputs[["TS10_s" + str(i)]] = t_s10
-        outputs[["TS50_s" + str(i)]] = t_s50
-        outputs[["TS90_s" + str(i)]] = t_s90
+        outputs[["TS10_s" + str(i)]] = t_s10[i]
+        outputs[["TS50_s" + str(i)]] = t_s50[i]
+        outputs[["TS90_s" + str(i)]] = t_s90[i]
 
     strain = outputs
 
