@@ -265,9 +265,14 @@ def wiggers_diagram(model, cmap="cubehelix", show_fig=True, file_type="pdf", fil
     finish_plot(fig, file_path, file_name, file_type, show_fig)
 
 
-def plot_growth(model, outputs, units="", show_fig=True, file_type="pdf", file_path=None, file_name="growth",
-                ax_size=(4.0, 3.0), max_cols=3):
+def plot_growth(model, outputs, units=(), show_fig=True, file_type="pdf", file_path=None, file_name="growth",
+                ax_size=(3.2, 2.4), max_cols=3):
     """Plot output of choice during growth"""
+
+    if len(units) == len(outputs):
+        units = [" (" + unit + ")" for unit in units]
+    else:
+        units = [""] * len(outputs)
 
     # Determine how many rows are needed based on max_cols
     n_outputs = len(outputs)
@@ -287,10 +292,10 @@ def plot_growth(model, outputs, units="", show_fig=True, file_type="pdf", file_p
         ax = fig.add_subplot(n_rows, n_cols, i + 1)
         ax.plot(model.growth.time, model.growth.outputs.loc[:, output], linewidth=3)
 
-        ax.set_ylabel(output + " (" + unit + ")", fontsize=12)
+        ax.set_ylabel(output + unit, fontsize=12)
         ax.set_xlabel("Time (days)", fontsize=12)
 
-        ax.set_xlim(model.growth.time[0], model.growth.time[-1])
+        ax.set_xlim(model.growth.time[0]-2, model.growth.time[-1])
 
     finish_plot(fig, file_path, file_name, file_type, show_fig)
 

@@ -69,6 +69,7 @@ def strain_outputs(model, outputs, time_g=0, dense_time_frame=50):
 
     return outputs
 
+
 def get_outputs(model, time_g=0, match_strain=False):
     """Collect model outputs in Pandas dataframe"""
 
@@ -121,6 +122,18 @@ def get_outputs(model, time_g=0, match_strain=False):
     lab_ed_la = np.mean(model.heart.lab_f[ed_frame, model.heart.patches == 3])
     lab_ed_ra = np.mean(model.heart.lab_f[ed_frame, model.heart.patches == 4])
 
+    # Maximum stretch and stress
+    lab_max_lfw = np.max(model.heart.lab_f[:, model.heart.patches == 0])
+    lab_max_rfw = np.max(model.heart.lab_f[:, model.heart.patches == 1])
+    lab_max_sw = np.max(model.heart.lab_f[:, model.heart.patches == 2])
+    lab_max_la = np.max(model.heart.lab_f[:, model.heart.patches == 3])
+    lab_max_ra = np.max(model.heart.lab_f[:, model.heart.patches == 4])
+    sig_max_lfw = np.max(model.heart.sig_f[:, model.heart.patches == 0])
+    sig_max_rfw = np.max(model.heart.sig_f[:, model.heart.patches == 1])
+    sig_max_sw = np.max(model.heart.sig_f[:, model.heart.patches == 2])
+    sig_max_la = np.max(model.heart.sig_f[:, model.heart.patches == 3])
+    sig_max_ra = np.max(model.heart.sig_f[:, model.heart.patches == 4])
+
     # Cardiac function of LV and RV
     sv = edv - esv  # [mL]
     sv_rv = edv_rv - esv_rv  # [mL]
@@ -169,22 +182,26 @@ def get_outputs(model, time_g=0, match_strain=False):
 
     # Turn into pandas
     outputs = pd.DataFrame([[edv, esv, edp, esp, p_max, dpdt_max, dpdt_min, sv, rf, ef, co,
-                          edv_rv, esv_rv, edp_rv, esp_rv, p_max_rv, dpdt_max_rv, dpdt_min_rv, sv_rv, rf_rv, ef_rv, co_rv,
-                          ed_wth[0], ed_wth[1], ed_wth[2], es_wth[0], es_wth[1], es_wth[2],
-                          dlv_sw, drv_sw, drvi, dlv_sw/drv_sw, dlv_sw/drvi, drv_sw/drvi, lvwv, rvwv,
-                          lvedd, lvesd, lvfs, rvedd, rvesd, rvfs,
-                          lab_ed_lfw, lab_ed_rfw, lab_ed_sw, lab_ed_la, lab_ed_ra,
-                          time_events['LVIVCT'], time_events['LVIVRT'], time_events['LVET'], time_events['LVFT'],
-                          time_events['RVIVCT'], time_events['RVIVRT'], time_events['RVET'], time_events['RVFT'],
-                          map, hr, dbp, sbp, ed_frame, es_frame, ed_time, es_time, ed_frame_rv, es_frame_rv, ed_time_rv,
-                          es_time_rv, lap,
-                          edv_i, esv_i, rvedv_i, rvesv_i], ],
+                             edv_rv, esv_rv, edp_rv, esp_rv, p_max_rv, dpdt_max_rv, dpdt_min_rv, sv_rv, rf_rv,
+                             ef_rv, co_rv, ed_wth[0], ed_wth[1], ed_wth[2], es_wth[0], es_wth[1], es_wth[2],
+                             dlv_sw, drv_sw, drvi, dlv_sw/drv_sw, dlv_sw/drvi, drv_sw/drvi, lvwv, rvwv,
+                             lvedd, lvesd, lvfs, rvedd, rvesd, rvfs,
+                             lab_ed_lfw, lab_ed_rfw, lab_ed_sw, lab_ed_la, lab_ed_ra,
+                             lab_max_lfw, lab_max_rfw, lab_max_sw, lab_max_la, lab_max_ra,
+                             sig_max_lfw, sig_max_rfw, sig_max_sw, sig_max_la, sig_max_ra,
+                             time_events['LVIVCT'], time_events['LVIVRT'], time_events['LVET'], time_events['LVFT'],
+                             time_events['RVIVCT'], time_events['RVIVRT'], time_events['RVET'], time_events['RVFT'],
+                             map, hr, dbp, sbp, ed_frame, es_frame, ed_time, es_time, ed_frame_rv, es_frame_rv,
+                             ed_time_rv, es_time_rv, lap,
+                             edv_i, esv_i, rvedv_i, rvesv_i], ],
                         columns=['LVEDV', 'LVESV', 'LVEDP', 'LVESP', 'LVMaxP', 'LVMaxdP', 'LVMindP', 'LVSV', 'LVRF', 'LVEF', 'LVCO',
                                  'RVEDV', 'RVESV', 'RVEDP', 'RVESP', 'RVMaxP', 'RVMaxdP', 'RVMindP', 'RVSV', 'RVRF', 'RVEF', 'RVCO',
                                  'EDWthLfw', 'EDWthRfw', 'EDWthSw', 'ESWthLfw', 'ESWthRfw', 'ESWthSw',
                                  'Dlvsw', 'Drvsw', 'Drvi', 'DlvswDrvsw', 'DlvswDrvi', 'DrvswDrvi', 'LVWV', 'RVWV',
                                  'LVEDD', 'LVESD', 'LVFS', 'RVEDD', 'RVESD', 'RVFS',
                                  'EDStretchLfw', 'EDStretchRfw', 'EDStretchSw', 'EDStretchLA', 'EDStretchRA',
+                                 "MaxStretchLfw", "MaxStretchRfw", "MaxStretchSw", "MaxStretchLA", "MaxStretchRA",
+                                 "MaxStressLfw", "MaxStressRfw", "MaxStressSw", "MaxStressLA", "MaxStressRA",
                                  'LVIVCT', 'LVIVRT', 'LVET', 'LVFT',
                                  'RVIVCT', 'RVIVRT', 'RVET', 'RVFT',
                                  'MAP', 'HR', 'DBP', 'SBP',

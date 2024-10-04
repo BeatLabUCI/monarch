@@ -31,9 +31,9 @@
   },
 
   "Solver": {
-    "cutoff": 0.01,
+    "cutoff": 0.001,
     "iter_max": 50,
-    "n_inc": 2000
+    "n_inc": 1500
   },
 
   "Heart": {
