@@ -119,6 +119,8 @@ def grow(model):
         f_g = fg_isotropic_goktepe(model, f_g_old, dt)
     elif model.growth.type == "transverse_hybrid":
         f_g = fg_hybrid(model, f_g_old, dt)
+    elif model.growth.type == "nonmechanic":
+        f_g = fg_nonmechanic(model, f_g_old, dt)
     else:
         raise Exception("Growth type not recognized")
 
@@ -314,6 +316,24 @@ def fg_isotropic_goktepe(model, f_g_old, dt):
 
     return f_g
 
+def fg_nonmechanic(model, f_g_old, dt):
+    """ 
+    Simple growth model that does not rely on mechanics
+    """
+    # print("inside nonmechanic")
+    # print("this is fg_old", f_g_old)
+
+    # Get current growth multipliers
+    theta_f = f_g_old[0, :] 
+
+    # Growth multiplier update
+    theta_f = theta_f + model.growth.tau_f_plus* dt
+
+    # Updated growth tensor
+    f_g = np.ones_like(f_g_old)
+    f_g[0, :] = f_g[1, :] = f_g[2, :] = theta_f
+
+    return f_g
 
 def fg_hybrid(model, f_g_old, dt):
     """Hybrid growth law between the Witzenburg and Jones & Oomen laws: sigmoid growth rate function with growth limiter

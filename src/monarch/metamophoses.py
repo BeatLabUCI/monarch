@@ -266,7 +266,7 @@ def wiggers_diagram(model, cmap="cubehelix", show_fig=True, file_type="pdf", fil
 
 
 def plot_growth(model, outputs, units=(), show_fig=True, file_type="pdf", file_path=None, file_name="growth",
-                ax_size=(3.2, 2.4), max_cols=3):
+                ax_size=(3.2, 2.4), max_cols=3, time_axis="Time (days)"):
     """Plot output of choice during growth"""
 
     if len(units) == len(outputs):
@@ -293,7 +293,7 @@ def plot_growth(model, outputs, units=(), show_fig=True, file_type="pdf", file_p
         ax.plot(model.growth.time, model.growth.outputs.loc[:, output], linewidth=3)
 
         ax.set_ylabel(output + unit, fontsize=12)
-        ax.set_xlabel("Time (days)", fontsize=12)
+        ax.set_xlabel(time_axis, fontsize=12)
 
         ax.set_xlim(model.growth.time[0]-2, model.growth.time[-1])
 
