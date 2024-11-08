@@ -133,6 +133,14 @@ def get_outputs(model, time_g=0, match_strain=False):
     sig_max_sw = np.max(model.heart.sig_f[:, model.heart.patches == 2])
     sig_max_la = np.max(model.heart.sig_f[:, model.heart.patches == 3])
     sig_max_ra = np.max(model.heart.sig_f[:, model.heart.patches == 4])
+    shortening = np.zeros(len(model.heart.patches))
+    max_strain = np.zeros(len(model.heart.patches))
+    for i in range(len(model.heart.patches)):
+        lab_max_s = np.max(model.heart.lab_f[:, i])
+        lab_ed_s = model.heart.lab_f[ed_frame, i]
+        shortening[i] = lab_max_s / lab_ed_s
+    for i in range(len(model.heart.patches)):
+        max_strain[i] = 0.5 * (np.max(model.heart.lab_f[:, i]) ** 2 - 1)
 
     # Cardiac function of LV and RV
     sv = edv - esv  # [mL]
@@ -193,7 +201,9 @@ def get_outputs(model, time_g=0, match_strain=False):
                              time_events['RVIVCT'], time_events['RVIVRT'], time_events['RVET'], time_events['RVFT'],
                              map, hr, dbp, sbp, ed_frame, es_frame, ed_time, es_time, ed_frame_rv, es_frame_rv,
                              ed_time_rv, es_time_rv, lap,
-                             edv_i, esv_i, rvedv_i, rvesv_i], ],
+                             edv_i, esv_i, rvedv_i, rvesv_i, max_strain[0], max_strain[1], max_strain[2], max_strain[3], max_strain[4],
+                             max_strain[5], max_strain[6], max_strain[7], max_strain[8], max_strain[9], max_strain[10],
+                             max_strain[11], max_strain[12], max_strain[13], max_strain[14], max_strain[15], ], ],
                         columns=['LVEDV', 'LVESV', 'LVEDP', 'LVESP', 'LVMaxP', 'LVMaxdP', 'LVMindP', 'LVSV', 'LVRF', 'LVEF', 'LVCO',
                                  'RVEDV', 'RVESV', 'RVEDP', 'RVESP', 'RVMaxP', 'RVMaxdP', 'RVMindP', 'RVSV', 'RVRF', 'RVEF', 'RVCO',
                                  'EDWthLfw', 'EDWthRfw', 'EDWthSw', 'ESWthLfw', 'ESWthRfw', 'ESWthSw',
@@ -206,7 +216,11 @@ def get_outputs(model, time_g=0, match_strain=False):
                                  'RVIVCT', 'RVIVRT', 'RVET', 'RVFT',
                                  'MAP', 'HR', 'DBP', 'SBP',
                                  'IED', 'IES', 'TED', 'TES', 'IED_RV', 'IES_RV', 'TED_RV', 'TES_RV', 'LAP',
-                                 'LVEDVi', 'LVESVi', 'RVEDVi', 'RVESVi'],
+                                 'LVEDVi', 'LVESVi', 'RVEDVi', 'RVESVi', "Strain_s0", "Strain_s1", "Strain_s2", "Strain_s3",
+                                    "Strain_s4",
+                                    "Strain_s5", "Strain_s6", "Strain_s7", "Strain_s8", "Strain_s9", "Strain_s10",
+                                    "Strain_s11",
+                                    "Strain_s12", "Strain_s13", "Strain_s14", "Strain_s15"],
                         index=[time_g])
 
     if match_strain:
