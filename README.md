@@ -10,14 +10,8 @@ It is recommended to install MONARCH in a virtual environment. To create a virtu
 conda create -n monarch python=3.12
 conda activate monarch
 ```
-### Installing using pip (not yet available)
-
-MONARCH can be installed using pip:
-```
-pip install monarch-beatlab
-```
 ### Installing from source
-Download the latest source code from Github. From a terminal window in the directory where you want to download and install the MONARCH source code, run:
+Download the latest source code from Github. From a terminal window (make sure to activate your virtual environment) in the directory where you want to download and install the MONARCH source code, run:
 ```
 git clone https://github.com/BeatLabUCI/monarch.git
 ```

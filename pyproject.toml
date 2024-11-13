@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "monarch"
-version = "0.0.1"
+version = "0.1"
 authors = [
   { name="Pim Oomen", email="pim.oomen@uci.edu" },
   { name="Clara Jones", email="claraej@uci.edu" },
