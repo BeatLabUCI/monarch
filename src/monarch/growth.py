@@ -95,7 +95,48 @@ def update_circ_heart(model):
     # Ischemia - disable active contraction of ischemic regions
     model.heart.ischemic = model.growth.ischemic[model.growth.i_g,:]
     model.heart.sf_act = model.heart.sf_act * (1 - model.heart.ischemic)
+    
+    if model.growth.type == "nonmechanic":
+        x = model.growth.i_g
 
+        model.circulation.sbv = -1525*(1.05**(-x)) + 1600
+        print("this is sbv", model.circulation.sbv)
+
+        #Weight depending on age x
+        # This was modeled based on Christian's data
+        weight = 9.94-0.895*x+0.702*x**2-0.0492*x**3+.00151*x**4-.0000216*x**5+.000000118*x**6
+        
+        pars_scaled = {}
+
+        # Parameters for a healthy 75kg male
+        resistances = {
+            "rvp": 0.015,
+            "rcs": 0.09,
+            "ras": 0.900,
+            "rvs": 0.015,
+            "rcp": 0.020,
+            "rap": 0.300,
+            "rav": 0.025
+        }
+        capacitances = {
+            "cvp": 8.0,
+            "cas": 1.12,
+            "cvs": 70.0,
+            "cap": 13.0
+        }
+
+        for key,value in resistances.items():
+            pars_scaled[key] = value * (weight/75)**(-3/4)
+
+        for key,value in capacitances.items():
+            pars_scaled[key] = value * (weight/75)
+
+        model.change_pars(pars_scaled)
+        # print("this is weight", weight)
+        # print("trying to see if i can get capacitances", model.capacitances.cvp)
+        # print("params sbv, ras ",model.circulation.sbv,
+        #       model.resistances.ras)
+        
 
 def grow(model):
     """
@@ -128,14 +169,43 @@ def grow(model):
     i_not_growing_walls = [i for i, patch in enumerate(model.heart.patches) if patch not in model.growth.growing_walls]
     f_g[:, i_not_growing_walls] = 1
     f_g_dot = f_g / f_g_old
+    print("this is fg dot", f_g_dot)
 
     model.growth.f_g[model.growth.i_g, :, :] = f_g
 
+    # if model.growth.type == "nonmechanic":
+    #     x = model.growth.i_g
+    #             # LV Mass equation obtained from Christian's data
+    #     lvmass = 19.6 + 0.227*x + 0.222*x**2 + 0.0329*x**3 + -.00267*x**4 + .000065*x**5 + -.000000523*x**6
+    #     lvwv = lvmass / 1.05 * 1e3
+
+    #     #Adjust LV wall volume
+    #     model.change_pars({"LVWV": lvwv})
+
+    #     theta_lv = lvwv / model.outputs["LVWV"][0]
+
+    #     # Adjust LV free wall area
+    #     model.change_pars({"AmRefLfw": model.heart.am_ref[0] * theta_lv**(2/3)})
+
+    #     # Use ratios to adjust other walls
+    #     model.change_pars({"AmRefRfwRatio": 1.36, "AmRefSwRatio": 0.53, "AmRefLARatio": 0.70, "AmRefRARatio": 0.51,
+    #             "RfwVRatio": 0.584, "LAWVRatio": 0.0924, "RAWVRatio": 0.0410})
+
+        
+    # else:
+    #     # Update geometry, including total wall volume and midwall reference areas
+    #     model.heart.am_ref = np.maximum(model.heart.am_ref * f_g_dot[0, :] * f_g_dot[1, :], 0.01)
+    #     model.heart.vw = model.heart.vw * np.prod(f_g_dot, axis=0) 
+    #     set_total_wall_volumes_areas(model)
+
+
     # Update geometry, including total wall volume and midwall reference areas
     model.heart.am_ref = np.maximum(model.heart.am_ref * f_g_dot[0, :] * f_g_dot[1, :], 0.01)
-    model.heart.vw = model.heart.vw * np.prod(f_g_dot, axis=0)
+    model.heart.vw = model.heart.vw * np.prod(f_g_dot, axis=0) 
     set_total_wall_volumes_areas(model)
 
+    print("this is volume ", model.heart.vw)
+    print("this is heart am", model.heart.am_ref)
 
 def fg_isotropic(model, f_g, dt):
     """
@@ -320,14 +390,18 @@ def fg_nonmechanic(model, f_g_old, dt):
     """ 
     Simple growth model that does not rely on mechanics
     """
-    # print("inside nonmechanic")
-    # print("this is fg_old", f_g_old)
 
     # Get current growth multipliers
     theta_f = f_g_old[0, :] 
 
+    phi = model.growth.tau_f_plus**(3*dt)
+
     # Growth multiplier update
-    theta_f = theta_f + model.growth.tau_f_plus* dt
+    theta_f = theta_f + model.growth.tau_f_plus* dt * (1/200) 
+    # theta_f = theta_f + phi
+
+    # update resistances and capacitances
+    # using calibration baseline
 
     # Updated growth tensor
     f_g = np.ones_like(f_g_old)
