@@ -97,15 +97,27 @@ def update_circ_heart(model):
     model.heart.sf_act = model.heart.sf_act * (1 - model.heart.ischemic)
     
     if model.growth.type == "nonmechanic":
-        x = model.growth.i_g
+        # Age
+        x = model.growth.i_g 
 
-        model.circulation.sbv = -1525*(1.05**(-x)) + 1600
-        print("this is sbv", model.circulation.sbv)
+        model.circulation.hr = 1.2**(-x+22) + 80
 
         #Weight depending on age x
         # This was modeled based on Christian's data
         weight = 9.94-0.895*x+0.702*x**2-0.0492*x**3+.00151*x**4-.0000216*x**5+.000000118*x**6
         
+        # Calculate Blood Volume:
+        # Avg Blood Volume = Patient weight (kg) * avg blood volume
+        # Avg blood volume for adult female: 65 mL/kg
+        # "" ""  ""        for infants: 80mL/kg
+        # "" ""  ""        for neonates: 85mL/kg
+        # "" ""  ""        for premature neonates: 95mL/kg
+
+        avg_bv = 20**(-0.05*x + 1) + 65
+
+        # Stressed blood volume is about 30% of total (15-30% range)
+        model.circulation.sbv = 0.3*(weight * avg_bv)
+
         pars_scaled = {}
 
         # Parameters for a healthy 75kg male
@@ -126,16 +138,12 @@ def update_circ_heart(model):
         }
 
         for key,value in resistances.items():
-            pars_scaled[key] = value * (weight/75)**(-3/4)
+            pars_scaled[key] = hiebing_scaling(value, -3/4, weight)
 
         for key,value in capacitances.items():
-            pars_scaled[key] = value * (weight/75)
+            pars_scaled[key] = hiebing_scaling(value, 1, weight)
 
         model.change_pars(pars_scaled)
-        # print("this is weight", weight)
-        # print("trying to see if i can get capacitances", model.capacitances.cvp)
-        # print("params sbv, ras ",model.circulation.sbv,
-        #       model.resistances.ras)
         
 
 def grow(model):
@@ -169,43 +177,49 @@ def grow(model):
     i_not_growing_walls = [i for i, patch in enumerate(model.heart.patches) if patch not in model.growth.growing_walls]
     f_g[:, i_not_growing_walls] = 1
     f_g_dot = f_g / f_g_old
-    print("this is fg dot", f_g_dot)
+    # print("this is fg dot", f_g_dot)
 
     model.growth.f_g[model.growth.i_g, :, :] = f_g
 
-    # if model.growth.type == "nonmechanic":
-    #     x = model.growth.i_g
-    #             # LV Mass equation obtained from Christian's data
-    #     lvmass = 19.6 + 0.227*x + 0.222*x**2 + 0.0329*x**3 + -.00267*x**4 + .000065*x**5 + -.000000523*x**6
-    #     lvwv = lvmass / 1.05 * 1e3
+    if model.growth.type == "nonmechanic":
+        x = model.growth.i_g 
+        #LV Wall Mass
+        # Function that fits Christian's data
+        lvmass = 20.3 + -2.44*x + 0.963*x**2 + -0.0529*x**3 + 0.00116*x**4 + -0.00000929*x**5 + 0.00000000544*x**6
+        print("lv mass", lvmass)
 
-    #     #Adjust LV wall volume
-    #     model.change_pars({"LVWV": lvwv})
+        #LV Wall Volume
+        lvwv = lvmass / 1.05 * 1e3
+        print("lv volume ", lvwv)
 
-    #     theta_lv = lvwv / model.outputs["LVWV"][0]
+        # Volumetric scaling factor
+        theta_lv = lvwv / model.outputs["LVWV"][0]
 
-    #     # Adjust LV free wall area
-    #     model.change_pars({"AmRefLfw": model.heart.am_ref[0] * theta_lv**(2/3)})
+        # Adjust LV wall volume
+        model.change_pars({"LVWV": lvwv})
 
-    #     # Use ratios to adjust other walls
-    #     model.change_pars({"AmRefRfwRatio": 1.36, "AmRefSwRatio": 0.53, "AmRefLARatio": 0.70, "AmRefRARatio": 0.51,
-    #             "RfwVRatio": 0.584, "LAWVRatio": 0.0924, "RAWVRatio": 0.0410})
+        # print("lvwv", lvwv)
 
-        
-    # else:
-    #     # Update geometry, including total wall volume and midwall reference areas
-    #     model.heart.am_ref = np.maximum(model.heart.am_ref * f_g_dot[0, :] * f_g_dot[1, :], 0.01)
-    #     model.heart.vw = model.heart.vw * np.prod(f_g_dot, axis=0) 
-    #     set_total_wall_volumes_areas(model)
+        # Adjust LV free wall area
+        model.change_pars({"AmRefLfw": model.heart.am_ref[0] * theta_lv **(2/3)})
 
+        # Use ratios to adjust other walls
+        model.change_pars({"AmRefRfwRatio": 1.36, "AmRefSwRatio": 0.53, "AmRefLARatio": 0.70, "AmRefRARatio": 0.51,
+                "RfwVRatio": 0.584, "LAWVRatio": 0.0924, "RAWVRatio": 0.0410})
 
-    # Update geometry, including total wall volume and midwall reference areas
-    model.heart.am_ref = np.maximum(model.heart.am_ref * f_g_dot[0, :] * f_g_dot[1, :], 0.01)
-    model.heart.vw = model.heart.vw * np.prod(f_g_dot, axis=0) 
+    else:
+        # Update geometry, including total wall volume and midwall reference areas
+        model.heart.am_ref = np.maximum(model.heart.am_ref * f_g_dot[0, :] * f_g_dot[1, :], 0.01)
+        model.heart.vw = model.heart.vw * np.prod(f_g_dot, axis=0) 
+    
     set_total_wall_volumes_areas(model)
 
+    print("this is age ", model.growth.i_g)
+    # print("this is sbv", model.circulation.sbv)
     print("this is volume ", model.heart.vw)
     print("this is heart am", model.heart.am_ref)
+    # print("this is hr: ", model.circulation.hr)
+    # print("this is ras and cas ", model.resistances.ras, model.capacitances.cas)
 
 def fg_isotropic(model, f_g, dt):
     """
@@ -394,14 +408,15 @@ def fg_nonmechanic(model, f_g_old, dt):
     # Get current growth multipliers
     theta_f = f_g_old[0, :] 
 
-    phi = model.growth.tau_f_plus**(3*dt)
+    # # We want to have a linear growth up until age 15
+    # if model.growth.i_g <= 15:
+    #     phi = 0.05
+    # else:
+    #     phi = 1/(10*(model.growth.i_g))
 
-    # Growth multiplier update
-    theta_f = theta_f + model.growth.tau_f_plus* dt * (1/200) 
-    # theta_f = theta_f + phi
-
-    # update resistances and capacitances
-    # using calibration baseline
+    phi = 1/(4*model.growth.i_g)
+    # # Growth multiplier update
+    theta_f = theta_f + model.growth.tau_f_plus* dt * (phi) 
 
     # Updated growth tensor
     f_g = np.ones_like(f_g_old)
@@ -491,3 +506,8 @@ def hill_function(s, s_50, n, tau):
 def k_g(theta, theta_max, gamma):
     """Weighting function"""
     return  ((theta_max - theta) / (theta_max - 1))**gamma
+
+
+# Parameter scaling formula from Hiebing 2023
+def hiebing_scaling(y, b, w, w0=70):
+    return y * (w/w0)**b
