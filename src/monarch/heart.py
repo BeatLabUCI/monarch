@@ -12,7 +12,7 @@ def v2p_numba(dt, tc, vs, ys, dv, dy, iv, vw_iv, amref_iv, lsref, lsc, lsc_0, ls
     Calculates and updates C, Lsc, P, and sig
     """
     # Kinematics for Ls = Lsc
-    lab_f = lsc[iv] / lsref[iv]
+    lab_f = lsc[iv] / lsref[iv] # stretch of contractile element
     lab_f_slice[iv] = lab_f
 
     # Stress and stress derivative, prevent update of C and Lsc
