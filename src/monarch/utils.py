@@ -203,7 +203,7 @@ def get_outputs(model, time_g=0, match_strain=False):
                              time_events['RVIVCT'], time_events['RVIVRT'], time_events['RVET'], time_events['RVFT'],
                              map, hr, dbp, sbp, ed_frame, es_frame, ed_time, es_time, ed_frame_rv, es_frame_rv,
                              ed_time_rv, es_time_rv, lap,
-                             edv_i, esv_i, rvedv_i, rvesv_i, work, work_lfw, work_sw, co_ras], ],
+                             edv_i, esv_i, rvedv_i, rvesv_i, work_lfw, work_sw, co_ras], ],
                         columns=['LVEDV', 'LVESV', 'LVEDP', 'LVESP', 'LVMaxP', 'LVMaxdP', 'LVMindP', 'LVSV', 'LVRF', 'LVEF', 'LVCO',
                                  'RVEDV', 'RVESV', 'RVEDP', 'RVESP', 'RVMaxP', 'RVMaxdP', 'RVMindP', 'RVSV', 'RVRF', 'RVEF', 'RVCO',
                                  'EDWthLfw', 'EDWthRfw', 'EDWthSw', 'ESWthLfw', 'ESWthRfw', 'ESWthSw',
@@ -216,7 +216,7 @@ def get_outputs(model, time_g=0, match_strain=False):
                                  'RVIVCT', 'RVIVRT', 'RVET', 'RVFT',
                                  'MAP', 'HR', 'DBP', 'SBP',
                                  'IED', 'IES', 'TED', 'TES', 'IED_RV', 'IES_RV', 'TED_RV', 'TES_RV', 'LAP',
-                                 'LVEDVi', 'LVESVi', 'RVEDVi', 'RVESVi', 'Work', 'WorkLfw', 'WorkSw', 'CO_Ras'],
+                                 'LVEDVi', 'LVESVi', 'RVEDVi', 'RVESVi', 'WorkLfw', 'WorkSw', 'CO_Ras'],
                         index=[time_g])
 
     if match_strain:
