@@ -180,19 +180,11 @@ def get_outputs(model, time_g=0, match_strain=False):
         rvedv_i = np.nan
         rvesv_i = np.nan
 
-    # Stroke work done by the LV
-    work = (p_max - min(model.pressures[:, 2])) * sv # [mmHg*mL]
+    # Stroke work done by the whole heart
+    work = -np.trapezoid(model.heart.sig_f[:, :]*1000000, 0.5*(model.heart.lab_f[:, :]**2 - 1), axis=0)  # [J / m^3] work of the LV during one cardiac cycle
 
-    # Work for each wall
-    strain_lfw = np.mean(0.5*(model.heart.lab_f[:, model.heart.patches == 0]**2 - 1), axis=1) # [-] Green strain for each time step averaged over all segments
-    sig_lfw = np.mean(model.heart.sig_f[:, model.heart.patches == 0], axis=1)*1000000 # [Pa] stress for each time step averaged over all segments
-    work_lfw = np.trapz(sig_lfw, x=strain_lfw) # [J] work of the LV free wall during one cardiac cycle
-    strain_rfw = np.mean(0.5*(model.heart.lab_f[:, model.heart.patches == 1]**2 - 1), axis=1)
-    sig_rfw = np.mean(model.heart.sig_f[:, model.heart.patches == 1], axis=1)*1000000
-    work_rfw = np.trapz(sig_rfw, x=strain_rfw)
-    strain_sw = np.mean(0.5*(model.heart.lab_f[:, model.heart.patches == 2]**2 - 1), axis=1)
-    sig_sw = np.mean(model.heart.sig_f[:, model.heart.patches == 2], axis=1)*1000000
-    work_sw = np.trapz(sig_sw, x=strain_sw)
+    work_lfw = work[model.heart.patches == 0].sum()
+    work_sw = work[model.heart.patches == 2].sum()
 
     # aorta-to-vein pressure drop (LVCO / Ras)
     co_ras = co / model.resistances.ras
@@ -211,7 +203,7 @@ def get_outputs(model, time_g=0, match_strain=False):
                              time_events['RVIVCT'], time_events['RVIVRT'], time_events['RVET'], time_events['RVFT'],
                              map, hr, dbp, sbp, ed_frame, es_frame, ed_time, es_time, ed_frame_rv, es_frame_rv,
                              ed_time_rv, es_time_rv, lap,
-                             edv_i, esv_i, rvedv_i, rvesv_i, work, work_lfw, work_sw, work_rfw, co_ras], ],
+                             edv_i, esv_i, rvedv_i, rvesv_i, work, work_lfw, work_sw, co_ras], ],
                         columns=['LVEDV', 'LVESV', 'LVEDP', 'LVESP', 'LVMaxP', 'LVMaxdP', 'LVMindP', 'LVSV', 'LVRF', 'LVEF', 'LVCO',
                                  'RVEDV', 'RVESV', 'RVEDP', 'RVESP', 'RVMaxP', 'RVMaxdP', 'RVMindP', 'RVSV', 'RVRF', 'RVEF', 'RVCO',
                                  'EDWthLfw', 'EDWthRfw', 'EDWthSw', 'ESWthLfw', 'ESWthRfw', 'ESWthSw',
@@ -224,7 +216,7 @@ def get_outputs(model, time_g=0, match_strain=False):
                                  'RVIVCT', 'RVIVRT', 'RVET', 'RVFT',
                                  'MAP', 'HR', 'DBP', 'SBP',
                                  'IED', 'IES', 'TED', 'TES', 'IED_RV', 'IES_RV', 'TED_RV', 'TES_RV', 'LAP',
-                                 'LVEDVi', 'LVESVi', 'RVEDVi', 'RVESVi', 'Work', 'WorkLfw', 'WorkSw', 'WorkRfw', 'CO_Ras'],
+                                 'LVEDVi', 'LVESVi', 'RVEDVi', 'RVESVi', 'Work', 'WorkLfw', 'WorkSw', 'CO_Ras'],
                         index=[time_g])
 
     if match_strain:

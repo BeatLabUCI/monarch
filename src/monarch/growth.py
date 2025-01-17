@@ -119,6 +119,8 @@ def grow(model):
         f_g = fg_isotropic_goktepe(model, f_g_old, dt)
     elif model.growth.type == "transverse_hybrid":
         f_g = fg_hybrid(model, f_g_old, dt)
+    elif model.growth.type == "isotropic_work":
+        f_g = fg_isotropic_work(model, f_g_old, dt)
     else:
         raise Exception("Growth type not recognized")
 
@@ -367,6 +369,47 @@ def fg_hybrid(model, f_g_old, dt):
 
     return f_g
 
+def fg_isotropic_work(model, f_g_old, dt):
+    """
+    Determine isotropic growth tensor based on Jones & Oomen, 2024, but using work as the growth driver
+    """
+
+    # Get mechanics at current time point
+    strain = 0.5*(model.growth.lab_f[0:model.growth.i_g, :, :]**2 - 1)
+    stress = model.growth.sig_f[0:model.growth.i_g, :, :]*1000000
+    work = -np.trapezoid(stress, strain, axis=1)
+
+    # Get fading memory of work
+    work_set =  get_weighted_average(work, model.growth.t_mem, model.growth.time, model.growth.i_g - 1)
+
+    # Get current growth multipliers
+    theta_f = f_g_old[0, :] ** 2
+
+    # Compute stimulus functions
+    s_f = (work[-1, :] - work_set) / work_set * (1 - model.heart.ischemic)
+
+    phi_f = s_f / model.growth.tau_f_min * (s_f < 0) + s_f / model.growth.tau_f_plus * (s_f >= 0)
+
+    # Compute weighing function
+    k_f = k_g(theta_f, model.growth.theta_f_min, model.growth.gamma) * (theta_f < 1) + \
+          k_g(theta_f, model.growth.theta_f_max, model.growth.gamma) * (theta_f >= 1)
+
+    # Growth multiplier update
+    theta_f = theta_f + k_f * phi_f * dt
+
+    # Updated growth tensor
+    f_g = np.ones_like(f_g_old)
+    f_g[0, :] = f_g[1, :] = f_g[2, :] = theta_f ** (1.0 / 3.0)
+
+    # Prevent growth beyond min and max values, can occur if time step is too big
+    f_g = np.clip(f_g.T, [model.growth.theta_f_min, model.growth.theta_f_min, model.growth.theta_r_min],
+                  [model.growth.theta_f_max ** 2, model.growth.theta_f_max ** 2, model.growth.theta_r_max]).T
+
+    # Store growth stimuli and setpoints
+    model.growth.s_l[model.growth.i_g, :] = s_f
+    model.growth.s_l_set[model.growth.i_g, :] = 0
+
+    return f_g
 
 def get_weighted_average(y, window_time, time, i_previous):
     """Calculate weighted average using a sawtooth weighting function"""
