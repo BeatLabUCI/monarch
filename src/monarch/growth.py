@@ -388,7 +388,7 @@ def fg_isotropic_work(model, f_g_old, dt):
     theta_f = f_g_old[0, :] ** 3
 
     # Compute stimulus functions
-    s_f = (work[-1, :] - work_set) / work_set * (1 - model.heart.ischemic)
+    s_f = (work_set - work[-1, :]) / work_set * (1 - model.heart.ischemic)
 
     phi_f = s_f / model.growth.tau_f_min * (s_f < 0) + s_f / model.growth.tau_f_plus * (s_f >= 0)
 
