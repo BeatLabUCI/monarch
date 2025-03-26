@@ -1,14 +1,14 @@
 {
   "Metadata (not used for simulation)": {
     "description": "Human with single patch per wall, and growth driven by pressure overload (through Ras)",
-    "references": [""],
+    "references": ["Burkhoff, D. & Tyberg, Am J Physiol-Heart 1993"],
     "notes": ""
   },
 
   "Circulation": {
     "hr": 75,
     "sbv": 1500,
-    "k": [0.10,  0.05,  0.10,  0.05, 0.30,  0.05, 0.10,  0.25]
+    "k": [0.10,  0.01,  0.10,  0.13, 0.30,  0.01, 0.10,  0.25]
   },
 
   "Capacitances": {

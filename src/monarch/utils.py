@@ -399,6 +399,8 @@ def change_pars(model, pars):
             par = par.split("_")[0]
             if par == "sact":
                 model.heart.sf_act[patch] = value
+            if par == "sfact":
+                model.heart.sf_act[patch] = value
             elif par == "tad":
                 model.heart.t_ad[patch] = value
             elif par == "td":
@@ -795,6 +797,7 @@ def get_pars(model, pars):
         # Restore original case of parameter names
         values = {par_orig[i]: value for i, (key, value) in enumerate(values.items())}
 
+        print(values)
         # Convert all values to float
         values = {key: float(value) for key, value in values.items()}
 

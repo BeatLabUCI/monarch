@@ -35,63 +35,99 @@ def v2p_numba(dt, tc, vs, ys, dv, dy, iv, vw_iv, amref_iv, lsref, lsc, lsc_0, ls
     vml = v_slice_now[2] * 1e3 + 0.5 * (vw_w[0] + vw_w[2])
     vmr = v_slice_now[6] * 1e3 + 0.5 * (vw_w[1] + vw_w[2])
 
-    # Initial estimate of tensions, if error is already below criterion the local solver will be skipped
+    # Initial estimate of tensions
     tx, ty, tmw, rm, xm = tension_numba(vs, ys, vml, vmr, amw0, dadtw)
-    err = err0 = np.linalg.norm(np.array([tx, ty]))  # Get Newton-Raphson error
+    err = err0 = np.linalg.norm(np.array([tx, ty]))
 
-    # Initialize Newton scheme
-    err_max, iter_max, iter = 1e-3, 3, 0
+    # Newton parameters
+    err_max, iter_max = 1e-3, 10  # Increased max iterations
     vs0, ys0 = vs, ys
+    damping = 1.0  # Initial damping factor
+    min_damping = 0.1
+    trust_radius = 0.1  # Initial trust region radius
+    eps = 1e-8  # Small number to prevent division by zero
 
-    while (err > err_max) and (iter < iter_max):
-        # Perturb solution
-        txv, tyv, _, _, _ = tension_numba(vs + dv, ys, vml, vmr, amw0, dadtw)
-        txy, tyy, _, _, _ = tension_numba(vs, ys + dy, vml, vmr, amw0, dadtw)
+    # For adaptive step size in Jacobian calculation
+    h_vs = max(1e-6, 1e-4 * abs(vs))
+    h_ys = max(1e-6, 1e-4 * abs(ys))
 
-        # Inverse Jacobian matrix and determinant
-        dtxdv, dtydv, dtxdy, dtydy = (txv - tx) / dv, (tyv - ty) / dv, (txy - tx) / dy, (tyy - ty) / dy
+    for iter in range(iter_max):
+        if err <= err_max:
+            break
+
+        # Calculate Jacobian with improved numerical precision
+        txv, tyv, _, _, _ = tension_numba(vs + h_vs, ys, vml, vmr, amw0, dadtw)
+        txy, tyy, _, _, _ = tension_numba(vs, ys + h_ys, vml, vmr, amw0, dadtw)
+
+        dtxdv, dtydv = (txv - tx) / h_vs, (tyv - ty) / h_vs
+        dtxdy, dtydy = (txy - tx) / h_ys, (tyy - ty) / h_ys
+
+        # Add regularization to Jacobian if needed
+        reg = 1e-6 * (abs(dtxdv) + abs(dtydy)) / 2.0
+        dtxdv += reg
+        dtydy += reg
+
         detj = dtxdv * dtydy - dtxdy * dtydv
 
-        # Estimated change in vs and ys
-        # If a derivative goes to 0, the solution become unstable and overshoots target values. Prevent this by
-        # nudging the next guess away from the unstable point when dv or dy becomes unreasonably large.
-        if not detj == 0:
+        # Compute Newton step with safeguards
+        if abs(detj) > eps:
             dv = (-dtydy * tx + dtxdy * ty) / detj
             dy = (+dtydv * tx - dtxdv * ty) / detj
-            if np.absolute(dv) > 0.1 * np.absolute(vs):
-                dv = np.sign(dv) * vs * 1e-2
-            if np.absolute(dy) > 0.1 * np.absolute(ys):
-                dy = np.sign(dy) * ys * 1e-2
+
+            # Apply trust region constraint
+            step_norm = np.sqrt(dv ** 2 + dy ** 2)
+            if step_norm > trust_radius * np.sqrt(vs ** 2 + ys ** 2):
+                scale = trust_radius * np.sqrt(vs ** 2 + ys ** 2) / step_norm
+                dv *= scale
+                dy *= scale
         else:
-            dv = np.sign(dv) * vs * 1e-2
-            dy = np.sign(dy) * ys * 1e-2
+            # Fallback to gradient descent if Jacobian is singular
+            dv = -damping * tx * 1e-2
+            dy = -damping * ty * 1e-2
 
-        # Update solution and state variables
-        vs, ys = vs + dv, ys + dy
-        tx, ty, tmw, rm, xm = tension_numba(vs, ys, vml, vmr, amw0, dadtw)
-        err = np.linalg.norm(np.array([tx, ty]))  # Get Newton-Raphson error
+        # Apply damping
+        dv *= damping
+        dy *= damping
 
-        # Update error if smaller, else perform line search to prevent overshooting minimum
-        if err < err0:
+        # Update solution and evaluate new error
+        vs_new, ys_new = vs + dv, ys + dy
+        tx_new, ty_new, tmw_new, rm_new, xm_new = tension_numba(vs_new, ys_new, vml, vmr, amw0, dadtw)
+        err_new = np.linalg.norm(np.array([tx_new, ty_new]))
+
+        # Implement improved line search with Armijo condition
+        if err_new < err:
+            # Step is good - accept it and possibly increase trust region
+            vs, ys = vs_new, ys_new
+            tx, ty, tmw, rm, xm = tx_new, ty_new, tmw_new, rm_new, xm_new
+            err = err_new
+
+            # Update trust region and damping based on improvement
+            reduction_ratio = (err0 - err) / (err0 * 0.5)  # Expected vs actual reduction
+            if reduction_ratio > 0.75:
+                trust_radius = min(2.0 * trust_radius, 0.5)
+                damping = min(1.0, damping * 1.2)
+            elif reduction_ratio < 0.25:
+                trust_radius = max(trust_radius * 0.5, 0.01)
+                damping = max(min_damping, damping * 0.8)
+
             err0, vs0, ys0 = err, vs, ys
         else:
-            iter_line = 0
-            while (err > err0) and (iter_line < iter_max):
-                tx0, ty0, _, _, _ = tension_numba(vs0, ys0, vml, vmr, amw0, dadtw)
+            # Step is bad - decrease trust region and try again
+            trust_radius *= 0.5
+            damping = max(min_damping, damping * 0.5)
 
-                # Estimate best line position
-                g0 = np.linalg.norm(np.array([tx0, ty0]))  # Get Newton-Raphson error
-                g0prime = -g0 / np.linalg.norm(np.array([vs - vs0, ys - ys0]))
-                g1 = np.linalg.norm(np.array([tx, ty]))  # Get Newton-Raphson error
-                lab = max(-g0prime / (2 * (g1 - g0 - g0prime)), 0.1)
+            # If trust region becomes too small, use bisection
+            if trust_radius < 1e-4:
+                alpha = 0.5  # Try halfway between previous and rejected point
+                vs_new = vs0 + alpha * dv
+                ys_new = ys0 + alpha * dy
+                tx_new, ty_new, tmw_new, rm_new, xm_new = tension_numba(vs_new, ys_new, vml, vmr, amw0, dadtw)
+                err_new = np.linalg.norm(np.array([tx_new, ty_new]))
 
-                # New estimates and error
-                vs, ys = (1 - lab) * vs0 + lab * vs, (1 - lab) * ys0 + lab * ys
-                tx, ty, tmw, rm, xm = tension_numba(vs, ys, vml, vmr, amw0, dadtw)
-                err = np.linalg.norm(np.array([tx, ty]))  # Get Newton-Raphson error
-                iter_line += 1
-
-        iter += 1
+                if err_new < err0:
+                    vs, ys = vs_new, ys_new
+                    tx, ty, tmw, rm, xm = tx_new, ty_new, tmw_new, rm_new, xm_new
+                    err = err_new
 
     # Ventricular kinematics at force balance and assign new geometry to class
     am = am0 + tmw[patches_iv] * dadt
@@ -161,9 +197,9 @@ def get_stress_myocardium_numba(dt, tc, lab_f_slice, lsref, lsc, lsc_0, ls_eiso,
 
     # Passive stress [MPa]
     lab_f_slice2 = lab_f_slice ** 2
-    sigp = np.minimum(2 * c_1 * (lab_f_slice2 - 1) + c_3 * (np.exp(c_4 * (lab_f_slice2 - 1)) - 1), 1e20)
+    sigp = np.minimum(2 * c_1 * (lab_f_slice2 - 1) + c_3 * (np.exp(c_4 * (lab_f_slice2 - 1)) - 1), 1e10)
     dsigpdlab_f = np.minimum(4 * c_1 * lab_f_slice + 2 * c_3 * c_4 * lab_f_slice * np.exp(c_4 * (lab_f_slice2 - 1)),
-                             1e20)
+                             1e10)
 
     # Length and time-dependent quantities to update C
     x = np.minimum(8, np.maximum(0, t))  # normalized time during rise of activation
