@@ -121,8 +121,8 @@ def grow(model):
         f_g = fg_hybrid(model, f_g_old, dt)
     elif model.growth.type == "isotropic_work":
         f_g = fg_isotropic_work(model, f_g_old, dt)
-    elif model.growth.type == "transverse_work":
-        f_g = fg_transverse_work(model, f_g_old, dt)
+    elif model.growth.type == "isotropic_hybrid_work":
+        f_g = fg_hybrid_work(model, f_g_old, dt)
     else:
         raise Exception("Growth type not recognized")
 
@@ -382,13 +382,13 @@ def fg_isotropic_work(model, f_g_old, dt):
     work = -np.trapezoid(stress, strain, axis=1)
 
     # Get fading memory of work
-    work_set =  get_weighted_average(work, model.growth.t_mem, model.growth.time, model.growth.i_g - 1)
+    work_set =  get_weighted_average_linear(work, model.growth.t_mem, model.growth.time, model.growth.i_g - 1)
 
     # Get current growth multipliers
     theta_f = f_g_old[0, :] ** 3
 
     # Compute stimulus functions
-    s_f = (work_set - work[-1, :]) / work_set * (1 - model.heart.ischemic)
+    s_f = (work[-1, :] - work_set) / work_set * (1 - model.heart.ischemic)
 
     phi_f = s_f / model.growth.tau_f_min * (s_f < 0) + s_f / model.growth.tau_f_plus * (s_f >= 0)
 
@@ -413,54 +413,45 @@ def fg_isotropic_work(model, f_g_old, dt):
 
     return f_g
 
-def fg_transverse_work(model, f_g_old, dt):
-    """
-    Determine transversely isotropic growth tensor driven by work
-    """
+def fg_hybrid_work(model, f_g_old, dt):
+    """Hybrid growth law between the Witzenburg and Jones & Oomen laws: sigmoid growth rate function with growth limiter
+    based on total growth - isotropic version with work as the growth driver"""
 
-    # Get mechanics
+    # Get mechanics at current time point
     strain = 0.5 * (model.growth.lab_f[0:model.growth.i_g, :, :] ** 2 - 1)
     stress = model.growth.sig_f[0:model.growth.i_g, :, :] * 1000000
     work = -np.trapezoid(stress, strain, axis=1)
 
-    # Get fading memory of maximum stretch
-    work_set = get_weighted_average(work, model.growth.t_mem, model.growth.time, model.growth.i_g - 1)
+    # Get fading memory of work
+    work_set = get_weighted_average_linear(work, model.growth.t_mem, model.growth.time, model.growth.i_g - 1)
 
     # Get current growth multipliers
-    theta_f = f_g_old[0, :] ** 2
-    theta_r = f_g_old[2, :]
+    theta_f = f_g_old[0, :] ** 3
 
     # Compute stimulus functions
     s_f = (work[-1, :] - work_set) / work_set * (1 - model.heart.ischemic)
-    s_r = (work[-1, :] - work_set) / work_set * (1 - model.heart.ischemic)
 
-    phi_f = s_f / model.growth.tau_f_min * (s_f < 0) + s_f / model.growth.tau_f_plus * (s_f >= 0)
-    phi_r = s_r / model.growth.tau_r_min * (s_r < 0) + s_r / model.growth.tau_r_plus * (s_r >= 0)
+    phi_f = -hill_function(s_f, model.growth.s50_f_min, model.growth.n_f_min, model.growth.tau_f_min) * (s_f < 0) + \
+             hill_function(s_f, model.growth.s50_f_plus, model.growth.n_f_plus, model.growth.tau_f_plus) * (s_f >= 0)
 
     # Compute weighing function
     k_f = k_g(theta_f, model.growth.theta_f_min, model.growth.gamma) * (theta_f < 1) + \
           k_g(theta_f, model.growth.theta_f_max, model.growth.gamma) * (theta_f >= 1)
-    k_r = k_g(theta_r, model.growth.theta_r_min, model.growth.gamma) * (theta_r < 1) + \
-          k_g(theta_r, model.growth.theta_r_max, model.growth.gamma) * (theta_r >= 1)
 
     # Growth multiplier update
     theta_f = theta_f + k_f * phi_f * dt
-    theta_r = theta_r + k_r * phi_r * dt
 
     # Updated growth tensor
     f_g = np.ones_like(f_g_old)
-    f_g[0, :] = f_g[1, :] = np.sqrt(theta_f)
-    f_g[2, :] = theta_r
+    f_g[0, :] = f_g[1, :] = f_g[2, :] = theta_f ** (1.0 / 3.0)
 
     # Prevent growth beyond min and max values, can occur if time step is too big
     f_g = np.clip(f_g.T, [model.growth.theta_f_min, model.growth.theta_f_min, model.growth.theta_r_min],
-                         [model.growth.theta_f_max**2, model.growth.theta_f_max**2, model.growth.theta_r_max]).T
+                         [model.growth.theta_f_max, model.growth.theta_f_max, model.growth.theta_r_max]).T
 
-    # Store growth stimuli and setpoints
+    # Store growth stimuli
     model.growth.s_l[model.growth.i_g, :] = s_f
-    model.growth.s_r[model.growth.i_g, :] = s_r
     model.growth.s_l_set[model.growth.i_g, :] = work_set
-    model.growth.s_r_set[model.growth.i_g, :] = work_set
 
     return f_g
 
@@ -483,6 +474,30 @@ def get_weighted_average(y, window_time, time, i_previous):
     i_y = np.searchsorted(time[:i_previous], weights_time)
 
     # Calculate weighted average of maximum stretch
+    return np.average(y[i_y, :], weights=weights, axis=0)
+
+
+def get_weighted_average_linear(y, window_time, time, i_previous):
+    """Calculate weighted average using a linear weighting function where recent points have higher weights"""
+
+    # Round window time to nearest integer
+    window_time = round(window_time)
+
+    # Create linear weighting function (highest weight for most recent point)
+    # This creates weights like [1, 2, 3, ..., window_time]
+    weights = np.arange(1, window_time + 1)
+
+    # Define the time points we want to include in our window
+    weights_time = np.arange(time[i_previous] - window_time, time[i_previous])
+
+    # Clip weights time to -1, this will repeat the first time point to fill up the history
+    # window if larger than the number of time points since the start of the simulation
+    weights_time = np.clip(weights_time, -1, None)
+
+    # Find indices of weights time in current time history
+    i_y = np.searchsorted(time[:i_previous], weights_time)
+
+    # Calculate weighted average
     return np.average(y[i_y, :], weights=weights, axis=0)
 
 
