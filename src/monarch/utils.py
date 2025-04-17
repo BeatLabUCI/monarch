@@ -70,6 +70,39 @@ def strain_outputs(model, outputs, time_g=0, dense_time_frame=50):
     return outputs
 
 
+def calculate_multiple_cardiac_loop_areas(strain, stress):
+    """
+    Calculate areas for multiple cardiac loops
+
+    Parameters:
+    strain: array of shape (1800, 23) - strain values for 23 different segments/regions
+    stress: array of shape (1800, 23) - stress values for 23 different segments/regions
+
+    Returns:
+    areas: array of shape (23,) containing the area of each loop
+    """
+    num_points, num_loops = strain.shape
+    areas = np.zeros(num_loops)
+
+    for i in range(num_loops):
+        # Extract the strain and stress for the current loop
+        strain_loop = strain[:, i]
+        stress_loop = stress[:, i]
+
+        # Calculate area using the shoelace formula
+        # A = 0.5 * |∑(x_i * y_i+1 - x_i+1 * y_i)|
+        area = 0.5 * abs(np.sum(strain_loop[:-1] * stress_loop[1:] -
+                                strain_loop[1:] * stress_loop[:-1]))
+
+        # Add the last segment (connecting last point to first point)
+        area += 0.5 * abs(strain_loop[-1] * stress_loop[0] -
+                          strain_loop[0] * stress_loop[-1])
+
+        areas[i] = area
+
+    return areas
+
+
 def get_outputs(model, time_g=0, match_strain=False):
     """Collect model outputs in Pandas dataframe"""
 
@@ -181,8 +214,9 @@ def get_outputs(model, time_g=0, match_strain=False):
         rvesv_i = np.nan
 
     # Stroke work done by the whole heart
-    work = -np.trapezoid(model.heart.sig_f[:, :]*1000000, 0.5*(model.heart.lab_f[:, :]**2 - 1), axis=0)  # [J / m^3] work of the LV during one cardiac cycle
-
+    strain = 0.5*(model.heart.lab_f[:, :]**2 - 1)
+    stress = model.heart.sig_f[:, :]*1000000
+    work = calculate_multiple_cardiac_loop_areas(strain, stress)
     work_lfw = work[model.heart.patches == 0].sum()
     work_sw = work[model.heart.patches == 2].sum()
 
