@@ -371,15 +371,48 @@ def fg_hybrid(model, f_g_old, dt):
 
     return f_g
 
+def calculate_work_over_time(strain, stress):
+    """
+    Calculate areas for multiple cardiac loops over multiple time points
+
+    Parameters:
+    strain: array of shape (time_points, 1800, 23) - strain values
+    stress: array of shape (time_points, 1800, 23) - stress values
+
+    Returns:
+    areas: array of shape (time_points, 23) containing the area of each loop at each time point
+    """
+    time_points, num_points, num_loops = strain.shape
+    areas = np.zeros((time_points, num_loops))
+
+    for t in range(time_points):
+        for i in range(num_loops):
+            # Extract the strain and stress for the current loop at current time point
+            strain_loop = strain[t, :, i]
+            stress_loop = stress[t, :, i]
+
+            # Calculate area using the shoelace formula
+            # A = 0.5 * |∑(x_i * y_i+1 - x_i+1 * y_i)|
+            area = 0.5 * abs(np.sum(strain_loop[:-1] * stress_loop[1:] -
+                                    strain_loop[1:] * stress_loop[:-1]))
+
+            # Add the last segment (connecting last point to first point)
+            area += 0.5 * abs(strain_loop[-1] * stress_loop[0] -
+                              strain_loop[0] * stress_loop[-1])
+
+            areas[t, i] = area
+
+    return areas
+
 def fg_isotropic_work(model, f_g_old, dt):
     """
     Determine isotropic growth tensor based on Jones & Oomen, 2024, but using work as the growth driver
     """
 
     # Get mechanics at current time point
-    strain = 0.5*(model.growth.lab_f[0:model.growth.i_g, :, :]**2 - 1)
-    stress = model.growth.sig_f[0:model.growth.i_g, :, :]*1000000
-    work = -np.trapezoid(stress, strain, axis=1)
+    strain = 0.5*(model.growth.lab_f[0:model.growth.i_g, :, :]**2 - 1) # Green-Lagrange strain
+    stress = model.growth.sig_f[0:model.growth.i_g, :, :]*1000000 # Convert stress to Pa
+    work = calculate_work_over_time(strain, stress)
 
     # Get fading memory of work
     work_set =  get_weighted_average_linear(work, model.growth.t_mem, model.growth.time, model.growth.i_g - 1)

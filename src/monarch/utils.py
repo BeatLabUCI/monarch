@@ -223,6 +223,12 @@ def get_outputs(model, time_g=0, match_strain=False):
     # aorta-to-vein pressure drop (LVCO / Ras)
     co_ras = co / model.resistances.ras
 
+    # Get shortening for each patch
+    diff_stretch = np.zeros(len(model.heart.patches))
+    for i in range(len(model.heart.patches)):
+        min_stretch = np.min(model.heart.lab_f[:, i])
+        max_stretch = np.max(model.heart.lab_f[:, i])
+        diff_stretch[i] = max_stretch - min_stretch
 
     # Turn into pandas
     outputs = pd.DataFrame([[edv, esv, edp, esp, p_max, dpdt_max, dpdt_min, sv, rf, ef, co,
@@ -237,7 +243,8 @@ def get_outputs(model, time_g=0, match_strain=False):
                              time_events['RVIVCT'], time_events['RVIVRT'], time_events['RVET'], time_events['RVFT'],
                              map, hr, dbp, sbp, ed_frame, es_frame, ed_time, es_time, ed_frame_rv, es_frame_rv,
                              ed_time_rv, es_time_rv, lap,
-                             edv_i, esv_i, rvedv_i, rvesv_i, work_lfw, work_sw, co_ras], ],
+                             edv_i, esv_i, rvedv_i, rvesv_i, work_lfw, work_sw, co_ras, diff_stretch[0], diff_stretch[1], diff_stretch[2], diff_stretch[3], diff_stretch[4],
+                             diff_stretch[5], diff_stretch[6], diff_stretch[7], diff_stretch[8],diff_stretch[9], diff_stretch[10], diff_stretch[11], diff_stretch[12], diff_stretch[13], diff_stretch[14], diff_stretch[15]]],
                         columns=['LVEDV', 'LVESV', 'LVEDP', 'LVESP', 'LVMaxP', 'LVMaxdP', 'LVMindP', 'LVSV', 'LVRF', 'LVEF', 'LVCO',
                                  'RVEDV', 'RVESV', 'RVEDP', 'RVESP', 'RVMaxP', 'RVMaxdP', 'RVMindP', 'RVSV', 'RVRF', 'RVEF', 'RVCO',
                                  'EDWthLfw', 'EDWthRfw', 'EDWthSw', 'ESWthLfw', 'ESWthRfw', 'ESWthSw',
@@ -250,7 +257,8 @@ def get_outputs(model, time_g=0, match_strain=False):
                                  'RVIVCT', 'RVIVRT', 'RVET', 'RVFT',
                                  'MAP', 'HR', 'DBP', 'SBP',
                                  'IED', 'IES', 'TED', 'TES', 'IED_RV', 'IES_RV', 'TED_RV', 'TES_RV', 'LAP',
-                                 'LVEDVi', 'LVESVi', 'RVEDVi', 'RVESVi', 'WorkLfw', 'WorkSw', 'CO_Ras'],
+                                 'LVEDVi', 'LVESVi', 'RVEDVi', 'RVESVi', 'WorkLfw', 'WorkSw', 'CO_Ras', 'DelStrain_s0', 'DelStrain_s1', 'DelStrain_s2', 'DelStrain_s3', 'DelStrain_s4',
+                                 'DelStrain_s5', 'DelStrain_s6', 'DelStrain_s7', 'DelStrain_s8', 'DelStrain_s9', 'DelStrain_s10', 'DelStrain_s11', 'DelStrain_s12', 'DelStrain_s13', 'DelStrain_s14', 'DelStrain_s15'],
                         index=[time_g])
 
     if match_strain:
