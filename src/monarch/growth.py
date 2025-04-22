@@ -3,6 +3,7 @@ import pandas as pd
 from .solvers import initialize_solvers_volumes, set_time_vector
 from .heart import set_total_wall_volumes_areas
 from .utils import get_outputs
+from numba import njit
 
 
 def initialize(model, use_converged):
@@ -13,6 +14,9 @@ def initialize(model, use_converged):
     # Initialize time arrays for growth variable storage
     model.growth.n_g = model.growth.time.size
     model.growth.lab_f_max = np.zeros((model.growth.n_g, model.heart.n_patches_tot))
+    model.growth.lab_f_ed = np.zeros((model.growth.n_g, model.heart.n_patches_tot))
+    model.growth.mvc_times = np.zeros(model.growth.n_g)
+    model.growth.avc_times = np.zeros(model.growth.n_g)
     model.growth.lab_r_max = np.zeros((model.growth.n_g, model.heart.n_patches_tot))
     model.growth.sig_f_max = np.zeros((model.growth.n_g, model.heart.n_patches_tot))
     model.growth.f_g = np.ones((model.growth.n_g, 3, model.heart.n_patches_tot))
@@ -61,6 +65,11 @@ def store(model):
     model.growth.lab_f[model.growth.i_g, :, :] = model.heart.lab_f
     model.growth.sig_f[model.growth.i_g, :, :] = model.heart.sig_f
     model.growth.lab_f_max[model.growth.i_g, :] = model.heart.lab_f.max(axis=0)
+
+    model.growth.mvc_times[model.growth.i_g] = model.growth.outputs['mvc'].iloc[model.growth.i_g]
+    model.growth.avc_times[model.growth.i_g] = model.growth.outputs['avc'].iloc[model.growth.i_g]
+    model.growth.lab_f_ed[model.growth.i_g, :] = model.heart.lab_f[outputs_frame['IED'], :]
+
     model.growth.lab_r_max[model.growth.i_g, :] = (1/model.heart.lab_f**2).max(axis=0)
     model.growth.sig_f_max[model.growth.i_g, :] = model.heart.sig_f.max(axis=0)
     model.growth.v_lv[model.growth.i_g, :] = model.volumes[:, 2]
@@ -120,7 +129,7 @@ def grow(model):
     elif model.growth.type == "transverse_hybrid":
         f_g = fg_hybrid(model, f_g_old, dt)
     elif model.growth.type == "isotropic_work":
-        f_g = fg_isotropic_work(model, f_g_old, dt)
+        f_g = fg_isotropic_work_cw_ww(model, f_g_old, dt)
     elif model.growth.type == "isotropic_hybrid_work":
         f_g = fg_hybrid_work(model, f_g_old, dt)
     else:
@@ -284,16 +293,16 @@ def fg_isotropic_goktepe(model, f_g_old, dt):
     """
 
     # Get mechanics
-    lab_f_max = model.growth.lab_f_max[0:model.growth.i_g, :]
+    lab_f_ed = model.growth.lab_f_ed[0:model.growth.i_g, :]
 
     # Get fading memory of maximum stretch
-    lab_f_max_set = get_weighted_average(lab_f_max, model.growth.t_mem, model.growth.time, model.growth.i_g - 1)
+    lab_f_ed_set = get_weighted_average_linear(lab_f_ed, model.growth.t_mem, model.growth.time, model.growth.i_g - 1)
 
     # Get current growth multipliers
     theta_f = f_g_old[0, :] ** 3
 
     # Compute stimulus functions
-    s_f = (lab_f_max[-1, :] - lab_f_max_set)/lab_f_max_set * (1 - model.heart.ischemic)
+    s_f = (lab_f_ed[-1, :] - lab_f_ed_set)/lab_f_ed_set * (1 - model.heart.ischemic)
 
     phi_f = s_f / model.growth.tau_f_min * (s_f < 0) + s_f / model.growth.tau_f_plus * (s_f >= 0)
 
@@ -314,7 +323,7 @@ def fg_isotropic_goktepe(model, f_g_old, dt):
 
     # Store growth stimuli and setpoints
     model.growth.s_l[model.growth.i_g, :] = s_f
-    model.growth.s_l_set[model.growth.i_g, :] = lab_f_max_set
+    model.growth.s_l_set[model.growth.i_g, :] = lab_f_ed_set
 
     return f_g
 
@@ -404,6 +413,95 @@ def calculate_work_over_time(strain, stress):
 
     return areas
 
+
+@njit
+def calculate_constructive_and_wasted_work(strain, stress, mvc_time, avc_time, time):
+    """
+    Calculate constructive work (CW) and wasted work (WW) for multiple cardiac segments across multiple days,
+    properly handling day-specific valve timing.
+
+    Parameters:
+    strain: array of shape (days, time_points, num_segments) - strain values
+    stress: array of shape (days, time_points, num_segments) - stress values
+    mvc_time: array - mitral valve closure time for each day (should be a NumPy array, not pandas Series)
+    avc_time: array - aortic valve closure time for each day (should be a NumPy array, not pandas Series)
+    time: array of time points corresponding to strain/stress measurements
+
+    Returns:
+    cw: array of shape (days, num_segments) containing constructive work for each segment on each day
+    ww: array of shape (days, num_segments) containing wasted work for each segment on each day
+    """
+    num_days, num_points, num_segments = strain.shape
+    cw = np.zeros((num_days, num_segments))
+    ww = np.zeros((num_days, num_segments))
+
+    # Calculate dt once
+    dt = time[1] - time[0]  # Assuming uniform time steps
+
+    # Create cardiac cycle time array once
+    cardiac_cycle_duration = 1800  # Adjust this to the actual cardiac cycle length
+    cardiac_time = np.linspace(0, cardiac_cycle_duration, num_points)
+
+    # Pre-compute time differences for efficiency
+    time_diffs = np.diff(cardiac_time)
+    # Add the last time difference to match the size of other arrays
+    time_diffs = np.append(time_diffs, time_diffs[-1])
+
+    for day in range(num_days):
+        # Get systole and diastole time indices
+        systole_start = int(mvc_time[day])
+        systole_end = int(avc_time[day])
+
+        # Calculate strain rate for this day
+        strain_rate = np.zeros_like(strain[day])
+        for i in range(num_segments):
+            for j in range(1, num_points - 1):
+                strain_rate[j, i] = (strain[day, j + 1, i] - strain[day, j - 1, i]) / (2 * dt)
+            # Handle endpoints with forward/backward differences
+            strain_rate[0, i] = (strain[day, 1, i] - strain[day, 0, i]) / dt
+            strain_rate[num_points - 1, i] = (strain[day, num_points - 1, i] - strain[day, num_points - 2, i]) / dt
+
+        # Create boolean mask for systole
+        systole_mask = np.zeros(num_points, dtype=np.bool_)
+        if systole_end < systole_start:
+            for i in range(systole_start, num_points):
+                systole_mask[i] = True
+            for i in range(0, systole_end + 1):
+                systole_mask[i] = True
+        else:
+            for i in range(systole_start, systole_end + 1):
+                systole_mask[i] = True
+
+        # For each segment
+        for i in range(num_segments):
+            # Systole calculations - shortening (negative strain rate) is constructive
+            for idx in range(num_points - 1):
+                if systole_mask[idx]:
+                    power = strain_rate[idx, i] * stress[day, idx, i]
+                    incremental_work = power * time_diffs[idx]
+
+                    if strain_rate[idx, i] < 0:  # Shortening in systole is constructive
+                        cw[day, i] += incremental_work
+                    else:  # Lengthening in systole is wasted
+                        ww[day, i] += incremental_work
+                else:  # Diastole - lengthening (positive strain rate) is constructive
+                    power = strain_rate[idx, i] * stress[day, idx, i]
+                    incremental_work = power * time_diffs[idx]
+
+                    if strain_rate[idx, i] > 0:  # Lengthening in diastole is constructive
+                        cw[day, i] += incremental_work
+                    else:  # Shortening in diastole is wasted
+                        ww[day, i] += incremental_work
+
+    # Take absolute values since we're interested in magnitude
+    for day in range(num_days):
+        for i in range(num_segments):
+            cw[day, i] = abs(cw[day, i])
+            ww[day, i] = abs(ww[day, i])
+
+    return cw, ww
+
+
 def fg_isotropic_work(model, f_g_old, dt):
     """
     Determine isotropic growth tensor based on Jones & Oomen, 2024, but using work as the growth driver
@@ -443,6 +541,70 @@ def fg_isotropic_work(model, f_g_old, dt):
     # Store growth stimuli and setpoints
     model.growth.s_l[model.growth.i_g, :] = s_f
     model.growth.s_l_set[model.growth.i_g, :] = work_set
+
+    return f_g
+
+
+def fg_isotropic_work_cw_ww(model, f_g_old, dt):
+    """
+    Determine isotropic growth tensor based on changes in constructive work (CW) and wasted work (WW).
+    Growth is driven 50% by increases in wasted work and 50% by decreases in constructive work.
+
+    Parameters:
+    model: model object containing growth parameters
+    f_g_old: previous growth tensor
+    dt: time step
+
+    Returns:
+    f_g: updated growth tensor
+    """
+    # Get mechanics at current time point
+    strain = 0.5 * (model.growth.lab_f[0:model.growth.i_g, :, :] ** 2 - 1)  # Green-Lagrange strain
+    stress = model.growth.sig_f[0:model.growth.i_g, :, :] * 1000000  # Convert stress to Pa
+    time = model.growth.time
+    mvc_time = model.growth.mvc_times  # Mitral valve closure time
+    avc_time = model.growth.avc_times  # Aortic valve closure time
+
+    # Calculate constructive and wasted work
+    cw, ww = calculate_constructive_and_wasted_work(strain, stress, mvc_time, avc_time, time)
+
+    # Get fading memory (set points) for constructive and wasted work
+    cw_set = get_weighted_average_linear(cw, model.growth.t_mem, time, model.growth.i_g - 1)
+    ww_set = get_weighted_average_linear(ww, model.growth.t_mem, time, model.growth.i_g - 1)
+
+    # Get current growth multipliers
+    theta_f = f_g_old[0, :] ** 3
+
+    # Compute stimulus functions
+    # 50% based on decrease in constructive work (negative when CW decreases)
+    s_cw = (cw[-1, :] - cw_set) / cw_set * (1 - model.heart.ischemic)
+
+    # 50% based on increase in wasted work (positive when WW increases)
+    s_ww = (ww[-1, :] - ww_set) / ww_set * (1 - model.heart.ischemic)
+
+    # Combined stimulus (negative s_cw contributes to growth, positive s_ww contributes to growth)
+    s_f = -0.5 * s_cw + 0.5 * s_ww
+
+    # Compute growth rate
+    phi_f = s_f / model.growth.tau_f_min * (s_f < 0) + s_f / model.growth.tau_f_plus * (s_f >= 0)
+
+    # Compute weighing function to limit growth
+    k_f = k_g(theta_f, model.growth.theta_f_min, model.growth.gamma) * (theta_f < 1) + \
+          k_g(theta_f, model.growth.theta_f_max, model.growth.gamma) * (theta_f >= 1)
+
+    # Growth multiplier update
+    theta_f = theta_f + k_f * phi_f * dt
+
+    # Updated growth tensor
+    f_g = np.ones_like(f_g_old)
+    f_g[0, :] = f_g[1, :] = f_g[2, :] = theta_f ** (1.0 / 3.0)  # determinant of Fg = theta
+
+    # Prevent growth beyond min and max values, can occur if time step is too big
+    f_g = np.clip(f_g.T, [model.growth.theta_f_min, model.growth.theta_f_min, model.growth.theta_r_min],
+                  [model.growth.theta_f_max, model.growth.theta_f_max, model.growth.theta_r_max]).T
+
+    # Store growth stimuli and setpoints
+    model.growth.s_l[model.growth.i_g, :] = s_f
 
     return f_g
 
@@ -511,27 +673,26 @@ def get_weighted_average(y, window_time, time, i_previous):
 
 
 def get_weighted_average_linear(y, window_time, time, i_previous):
-    """Calculate weighted average using a linear weighting function where recent points have higher weights"""
+    """Calculate weighted average using a linear weighting function with robust initialization"""
 
     # Round window time to nearest integer
     window_time = round(window_time)
 
-    # Create linear weighting function (highest weight for most recent point)
-    # This creates weights like [1, 2, 3, ..., window_time]
-    weights = np.arange(1, window_time + 1)
+    # Handle the case where we don't have enough history
+    if i_previous < 2:  # At least 2 points needed for meaningful average
+        return y[i_previous - 1, :] if i_previous > 0 else np.zeros_like(y[0, :])
 
-    # Define the time points we want to include in our window
-    weights_time = np.arange(time[i_previous] - window_time, time[i_previous])
+    # Limit window_time to the available history
+    effective_window = min(window_time, i_previous)
 
-    # Clip weights time to -1, this will repeat the first time point to fill up the history
-    # window if larger than the number of time points since the start of the simulation
-    weights_time = np.clip(weights_time, -1, None)
+    # Create linear weights (highest for most recent)
+    weights = np.arange(1, effective_window + 1)
 
-    # Find indices of weights time in current time history
-    i_y = np.searchsorted(time[:i_previous], weights_time)
+    # Get the indices of the time points we want to include
+    indices = np.arange(max(0, i_previous - effective_window), i_previous)
 
     # Calculate weighted average
-    return np.average(y[i_y, :], weights=weights, axis=0)
+    return np.average(y[indices, :], weights=weights[-len(indices):], axis=0)
 
 
 def hill_function(s, s_50, n, tau):

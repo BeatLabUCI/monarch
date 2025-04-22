@@ -103,6 +103,87 @@ def calculate_multiple_cardiac_loop_areas(strain, stress):
     return areas
 
 
+def calculate_constructive_and_wasted_work(strain, stress, valve_events, time):
+    """
+    Calculate constructive work (CW) and wasted work (WW) for multiple cardiac segments
+
+    Parameters:
+    strain: array of shape (time_points, num_segments) - strain values for different segments/regions
+    stress: array of shape (time_points, num_segments) - stress values for different segments/regions
+    valve_events: dictionary containing valve timing events
+    time: array of time points corresponding to strain/stress measurements
+
+    Returns:
+    cw: array of shape (num_segments,) containing constructive work for each segment
+    ww: array of shape (num_segments,) containing wasted work for each segment
+    """
+    num_points, num_segments = strain.shape
+    cw = np.zeros(num_segments)
+    ww = np.zeros(num_segments)
+
+    # Get systole and diastole time indices
+    systole_start = valve_events['mv_closes']  # Mitral valve closes = start of systole
+    systole_end = valve_events['av_closes']  # Aortic valve closes = end of systole/ejection
+    diastole_start = systole_end  # Start of isovolumic relaxation
+    diastole_end = valve_events['mv_closes']  # End of filling phase
+
+    # Handle case where valve events cross the end of the array
+    if systole_end < systole_start:
+        systole_indices = list(range(systole_start, num_points)) + list(range(0, systole_end + 1))
+    else:
+        systole_indices = list(range(systole_start, systole_end + 1))
+
+    if diastole_end < diastole_start:
+        diastole_indices = list(range(diastole_start, num_points)) + list(range(0, diastole_end + 1))
+    else:
+        diastole_indices = list(range(diastole_start, diastole_end + 1))
+
+    # Calculate strain rate (derivative of strain)
+    dt = time[1] - time[0]
+    strain_rate = np.gradient(strain, dt, axis=0)
+
+    for i in range(num_segments):
+        # For each time point in systole
+        for j in range(len(systole_indices) - 1):
+            idx = systole_indices[j]
+            next_idx = systole_indices[j + 1]
+
+            # Calculate incremental work
+            power = strain_rate[idx, i] * stress[idx, i]
+            incremental_work = power * (time[next_idx] - time[idx])
+
+            # During systole:
+            # - Negative strain rate (shortening) -> Constructive Work
+            # - Positive strain rate (lengthening) -> Wasted Work
+            if strain_rate[idx, i] < 0:  # Shortening
+                cw[i] += incremental_work
+            else:  # Lengthening
+                ww[i] += incremental_work
+
+        # For each time point in diastole
+        for j in range(len(diastole_indices) - 1):
+            idx = diastole_indices[j]
+            next_idx = diastole_indices[j + 1]
+
+            # Calculate incremental work
+            power = strain_rate[idx, i] * stress[idx, i]
+            incremental_work = power * (time[next_idx] - time[idx])
+
+            # During diastole:
+            # - Positive strain rate (lengthening) -> Constructive Work
+            # - Negative strain rate (shortening) -> Wasted Work
+            if strain_rate[idx, i] > 0:  # Lengthening
+                cw[i] += incremental_work
+            else:  # Shortening
+                ww[i] += incremental_work
+
+    # Take absolute values since we're interested in magnitude
+    cw = np.abs(cw)
+    ww = np.abs(ww)
+
+    return cw, ww
+
+
 def get_outputs(model, time_g=0, match_strain=False):
     """Collect model outputs in Pandas dataframe"""
 
@@ -220,6 +301,18 @@ def get_outputs(model, time_g=0, match_strain=False):
     work_lfw = work[model.heart.patches == 0].sum()
     work_sw = work[model.heart.patches == 2].sum()
 
+    # Calculate constructive and wasted work
+    cw, ww = calculate_constructive_and_wasted_work(strain, stress, time_events, model.time)
+
+    # Calculate regional and total CW and WW
+    cw_lfw = cw[model.heart.patches == 0].sum()
+    cw_sw = cw[model.heart.patches == 2].sum()
+    cw_tot = cw.sum()
+
+    ww_lfw = ww[model.heart.patches == 0].sum()
+    ww_sw = ww[model.heart.patches == 2].sum()
+    ww_tot = ww.sum()
+
     # aorta-to-vein pressure drop (LVCO / Ras)
     co_ras = co / model.resistances.ras
 
@@ -241,10 +334,13 @@ def get_outputs(model, time_g=0, match_strain=False):
                              sig_max_lfw, sig_max_rfw, sig_max_sw, sig_max_la, sig_max_ra,
                              time_events['LVIVCT'], time_events['LVIVRT'], time_events['LVET'], time_events['LVFT'],
                              time_events['RVIVCT'], time_events['RVIVRT'], time_events['RVET'], time_events['RVFT'],
+                             time_events['mv_closes'], time_events['av_closes'],
                              map, hr, dbp, sbp, ed_frame, es_frame, ed_time, es_time, ed_frame_rv, es_frame_rv,
                              ed_time_rv, es_time_rv, lap,
                              edv_i, esv_i, rvedv_i, rvesv_i, work_lfw, work_sw, co_ras, diff_stretch[0], diff_stretch[1], diff_stretch[2], diff_stretch[3], diff_stretch[4],
-                             diff_stretch[5], diff_stretch[6], diff_stretch[7], diff_stretch[8],diff_stretch[9], diff_stretch[10], diff_stretch[11], diff_stretch[12], diff_stretch[13], diff_stretch[14], diff_stretch[15]]],
+                             diff_stretch[5], diff_stretch[6], diff_stretch[7], diff_stretch[8],diff_stretch[9], diff_stretch[10], diff_stretch[11],
+                             diff_stretch[12], diff_stretch[13], diff_stretch[14], diff_stretch[15],
+                             cw_lfw, cw_sw, cw_tot, ww_lfw, ww_sw, ww_tot]],
                         columns=['LVEDV', 'LVESV', 'LVEDP', 'LVESP', 'LVMaxP', 'LVMaxdP', 'LVMindP', 'LVSV', 'LVRF', 'LVEF', 'LVCO',
                                  'RVEDV', 'RVESV', 'RVEDP', 'RVESP', 'RVMaxP', 'RVMaxdP', 'RVMindP', 'RVSV', 'RVRF', 'RVEF', 'RVCO',
                                  'EDWthLfw', 'EDWthRfw', 'EDWthSw', 'ESWthLfw', 'ESWthRfw', 'ESWthSw',
@@ -255,10 +351,14 @@ def get_outputs(model, time_g=0, match_strain=False):
                                  "MaxStressLfw", "MaxStressRfw", "MaxStressSw", "MaxStressLA", "MaxStressRA",
                                  'LVIVCT', 'LVIVRT', 'LVET', 'LVFT',
                                  'RVIVCT', 'RVIVRT', 'RVET', 'RVFT',
+                                 'mvc', 'avc',
                                  'MAP', 'HR', 'DBP', 'SBP',
                                  'IED', 'IES', 'TED', 'TES', 'IED_RV', 'IES_RV', 'TED_RV', 'TES_RV', 'LAP',
-                                 'LVEDVi', 'LVESVi', 'RVEDVi', 'RVESVi', 'WorkLfw', 'WorkSw', 'CO_Ras', 'DelStrain_s0', 'DelStrain_s1', 'DelStrain_s2', 'DelStrain_s3', 'DelStrain_s4',
-                                 'DelStrain_s5', 'DelStrain_s6', 'DelStrain_s7', 'DelStrain_s8', 'DelStrain_s9', 'DelStrain_s10', 'DelStrain_s11', 'DelStrain_s12', 'DelStrain_s13', 'DelStrain_s14', 'DelStrain_s15'],
+                                 'LVEDVi', 'LVESVi', 'RVEDVi', 'RVESVi', 'WorkLfw', 'WorkSw', 'CO_Ras',
+                                 'DelStrain_s0', 'DelStrain_s1', 'DelStrain_s2', 'DelStrain_s3', 'DelStrain_s4',
+                                 'DelStrain_s5', 'DelStrain_s6', 'DelStrain_s7', 'DelStrain_s8', 'DelStrain_s9',
+                                 'DelStrain_s10', 'DelStrain_s11', 'DelStrain_s12', 'DelStrain_s13', 'DelStrain_s14', 'DelStrain_s15',
+                                 'CW_Lfw', 'CW_Sw', 'CW_tot', 'WW_Lfw', 'WW_Sw', 'WW_tot'],
                         index=[time_g])
 
     if match_strain:
