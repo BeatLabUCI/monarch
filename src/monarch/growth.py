@@ -129,7 +129,7 @@ def grow(model):
     elif model.growth.type == "transverse_hybrid":
         f_g = fg_hybrid(model, f_g_old, dt)
     elif model.growth.type == "isotropic_work":
-        f_g = fg_isotropic_work_cw_ww(model, f_g_old, dt)
+        f_g = fg_isotropic_goktepe(model, f_g_old, dt)
     elif model.growth.type == "isotropic_hybrid_work":
         f_g = fg_hybrid_work(model, f_g_old, dt)
     else:
