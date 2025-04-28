@@ -321,31 +321,15 @@ def get_outputs(model, time_g=0, match_strain=False):
     for i in range(len(model.heart.patches)):
         # Find the minimum value and its index
         min_stretch = np.min(model.heart.lab_f[:, i])
-        min_index = np.argmin(model.heart.lab_f[:, i])
-
-        # Find the maximum value with constraints based on ed_frame and min_index
-        if min_index > ed_frame:
-            # If min occurs after ed_frame, find max between ed_frame and min_index
-            if ed_frame < min_index:  # Make sure the range is valid
-                max_stretch = np.max(model.heart.lab_f[ed_frame:min_index, i])
-            else:
-                # Handle case where there are no elements between ed_frame and min_index
-                max_stretch = min_stretch  # Default value
-        else:
-            # Two possibilities: max before min or max after ed_frame
-            if min_index > 0:  # Ensure there are elements before min_index
-                max_stretch_before_min = np.max(model.heart.lab_f[:min_index, i])
-            else:
-                max_stretch_before_min = min_stretch
-
-            # Ensure there are elements after ed_frame
-            if ed_frame < model.heart.lab_f.shape[0]:
-                max_stretch_after_ED = np.max(model.heart.lab_f[ed_frame:, i])
-            else:
-                max_stretch_after_ED = min_stretch
-
-            max_stretch = max(max_stretch_before_min, max_stretch_after_ED)
-
+        # min_index = np.argmin(model.heart.lab_f[:, i])
+        #
+        # # Find the maximum value with constraints based on ed_frame and min_index
+        # if min_index > ed_frame:
+        #     # If min occurs after ed_frame, find max between ed_frame and min_index
+        #     max_stretch = np.max(model.heart.lab_f[ed_frame:min_index, i])
+        # else:
+        #     max_stretch = np.max(model.heart.lab_f[:, i])
+        max_stretch = np.max(model.heart.lab_f[:, i])
         diff_stretch[i] = max_stretch - min_stretch
 
     # Turn into pandas
