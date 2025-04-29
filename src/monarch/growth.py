@@ -371,19 +371,20 @@ def fg_hybrid(model, f_g_old, dt):
 
     return f_g
 
+
 def calculate_work_over_time(strain, stress):
     """
     Calculate areas for multiple cardiac loops over multiple time points
 
     Parameters:
-    strain: array of shape (time_points, 1800, 23) - strain values
-    stress: array of shape (time_points, 1800, 23) - stress values
+    strain: array of shape (time_points, num_points, num_loops) - strain values
+    stress: array of shape (time_points, num_points, num_loops) - stress values
 
     Returns:
-    areas: array of shape (time_points, 23) containing the area of each loop at each time point
+    areas: array of shape (time_points, num_loops) containing the area of each loop at each time point
     """
     time_points, num_points, num_loops = strain.shape
-    areas = np.zeros((time_points, num_loops))
+    work = np.zeros((time_points, num_loops))
 
     for t in range(time_points):
         for i in range(num_loops):
@@ -400,9 +401,9 @@ def calculate_work_over_time(strain, stress):
             area += 0.5 * abs(strain_loop[-1] * stress_loop[0] -
                               strain_loop[0] * stress_loop[-1])
 
-            areas[t, i] = area
+            work[t, i] = area
 
-    return areas
+    return work
 
 def fg_isotropic_work(model, f_g_old, dt):
     """
@@ -412,7 +413,8 @@ def fg_isotropic_work(model, f_g_old, dt):
     # Get mechanics at current time point
     strain = 0.5*(model.growth.lab_f[0:model.growth.i_g, :, :]**2 - 1) # Green-Lagrange strain
     stress = model.growth.sig_f[0:model.growth.i_g, :, :]*1000000 # Convert stress to Pa
-    work = calculate_work_over_time(strain, stress)
+    # work = calculate_work_over_time(strain, stress)
+    work = -np.trapezoid(stress, strain, axis=1)  # Work done in each loop
 
     # Get fading memory of work
     work_set =  get_weighted_average_linear(work, model.growth.t_mem, model.growth.time, model.growth.i_g - 1)
@@ -421,7 +423,7 @@ def fg_isotropic_work(model, f_g_old, dt):
     theta_f = f_g_old[0, :] ** 3
 
     # Compute stimulus functions
-    s_f = (work[-1, :] - work_set) / work_set * (1 - model.heart.ischemic)
+    s_f = (work_set - work[-1, :]) / work_set * (1 - model.heart.ischemic)
 
     phi_f = s_f / model.growth.tau_f_min * (s_f < 0) + s_f / model.growth.tau_f_plus * (s_f >= 0)
 
@@ -509,29 +511,25 @@ def get_weighted_average(y, window_time, time, i_previous):
     # Calculate weighted average of maximum stretch
     return np.average(y[i_y, :], weights=weights, axis=0)
 
-
 def get_weighted_average_linear(y, window_time, time, i_previous):
     """Calculate weighted average using a linear weighting function where recent points have higher weights"""
 
     # Round window time to nearest integer
     window_time = round(window_time)
 
-    # Handle the case where we don't have enough history
-    if i_previous < 2:  # At least 2 points needed for meaningful average
-        return y[i_previous - 1, :] if i_previous > 0 else np.zeros_like(y[0, :])
+    # Make linear weighting function
+    weights = np.arange(1, window_time + 1)
+    weights_time = np.arange(time[i_previous] - np.ceil(window_time), time[i_previous])
 
-    # Limit window_time to the available history
-    effective_window = min(window_time, i_previous)
+    # Clip weights time to -1, this will repeat the first time point to fill up the history window is larger than the
+    # number of time points that have passed since the start of the simulation
+    weights_time = np.clip(weights_time, -1, None)
 
-    # Create linear weights (highest for most recent)
-    weights = np.arange(1, effective_window + 1)
+    # Find indices of weights time in current time history
+    i_y = np.searchsorted(time[:i_previous], weights_time)
 
-    # Get the indices of the time points we want to include
-    indices = np.arange(max(0, i_previous - effective_window), i_previous)
-
-    # Calculate weighted average
-    return np.average(y[indices, :], weights=weights[-len(indices):], axis=0)
-
+    # Calculate weighted average of maximum stretch
+    return np.average(y[i_y, :], weights=weights, axis=0)
 
 def hill_function(s, s_50, n, tau):
     """Hill function"""
