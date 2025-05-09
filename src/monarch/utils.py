@@ -301,17 +301,17 @@ def get_outputs(model, time_g=0, match_strain=False):
     work_lfw = work[model.heart.patches == 0].sum()
     work_sw = work[model.heart.patches == 2].sum()
 
-    # Calculate constructive and wasted work
-    cw, ww = calculate_constructive_and_wasted_work(strain, stress, time_events, model.time)
-
-    # Calculate regional and total CW and WW
-    cw_lfw = cw[model.heart.patches == 0].sum()
-    cw_sw = cw[model.heart.patches == 2].sum()
-    cw_tot = cw.sum()
-
-    ww_lfw = ww[model.heart.patches == 0].sum()
-    ww_sw = ww[model.heart.patches == 2].sum()
-    ww_tot = ww.sum()
+    # # Calculate constructive and wasted work
+    # cw, ww = calculate_constructive_and_wasted_work(strain, stress, time_events, model.time)
+    #
+    # # Calculate regional and total CW and WW
+    # cw_lfw = cw[model.heart.patches == 0].sum()
+    # cw_sw = cw[model.heart.patches == 2].sum()
+    # cw_tot = cw.sum()
+    #
+    # ww_lfw = ww[model.heart.patches == 0].sum()
+    # ww_sw = ww[model.heart.patches == 2].sum()
+    # ww_tot = ww.sum()
 
     # aorta-to-vein pressure drop (LVCO / Ras)
     co_ras = co / model.resistances.ras
@@ -321,15 +321,18 @@ def get_outputs(model, time_g=0, match_strain=False):
     for i in range(len(model.heart.patches)):
         # Find the minimum value and its index
         min_stretch = np.min(model.heart.lab_f[:, i])
-        # min_index = np.argmin(model.heart.lab_f[:, i])
-        #
-        # # Find the maximum value with constraints based on ed_frame and min_index
-        # if min_index > ed_frame:
-        #     # If min occurs after ed_frame, find max between ed_frame and min_index
-        #     max_stretch = np.max(model.heart.lab_f[ed_frame:min_index, i])
-        # else:
-        #     max_stretch = np.max(model.heart.lab_f[:, i])
-        max_stretch = np.max(model.heart.lab_f[:, i])
+        min_index = np.argmin(model.heart.lab_f[:, i])
+
+        # Find the maximum value with constraints based on ed_frame and min_index
+        if min_index > ed_frame:
+            # If min occurs after ed_frame, find max between ed_frame and min_index
+            max_stretch = np.max(model.heart.lab_f[ed_frame:min_index, i])
+        else:
+            max_stretch_after_ed = np.max(model.heart.lab_f[ed_frame:, i])
+            max_stretch_before_min = np.max(model.heart.lab_f[:min_index, i])
+            max_stretch = max(max_stretch_after_ed, max_stretch_before_min)
+
+        # max_stretch = np.max(model.heart.lab_f[:, i])
         diff_stretch[i] = max_stretch - min_stretch
 
     # Turn into pandas
@@ -348,8 +351,7 @@ def get_outputs(model, time_g=0, match_strain=False):
                              ed_time_rv, es_time_rv, lap,
                              edv_i, esv_i, rvedv_i, rvesv_i, work_lfw, work_sw, co_ras, diff_stretch[0], diff_stretch[1], diff_stretch[2], diff_stretch[3], diff_stretch[4],
                              diff_stretch[5], diff_stretch[6], diff_stretch[7], diff_stretch[8],diff_stretch[9], diff_stretch[10], diff_stretch[11],
-                             diff_stretch[12], diff_stretch[13], diff_stretch[14], diff_stretch[15],
-                             cw_lfw, cw_sw, cw_tot, ww_lfw, ww_sw, ww_tot]],
+                             diff_stretch[12], diff_stretch[13], diff_stretch[14], diff_stretch[15]]],
                         columns=['LVEDV', 'LVESV', 'LVEDP', 'LVESP', 'LVMaxP', 'LVMaxdP', 'LVMindP', 'LVSV', 'LVRF', 'LVEF', 'LVCO',
                                  'RVEDV', 'RVESV', 'RVEDP', 'RVESP', 'RVMaxP', 'RVMaxdP', 'RVMindP', 'RVSV', 'RVRF', 'RVEF', 'RVCO',
                                  'EDWthLfw', 'EDWthRfw', 'EDWthSw', 'ESWthLfw', 'ESWthRfw', 'ESWthSw',
@@ -366,8 +368,7 @@ def get_outputs(model, time_g=0, match_strain=False):
                                  'LVEDVi', 'LVESVi', 'RVEDVi', 'RVESVi', 'WorkLfw', 'WorkSw', 'CO_Ras',
                                  'DelStrain_s0', 'DelStrain_s1', 'DelStrain_s2', 'DelStrain_s3', 'DelStrain_s4',
                                  'DelStrain_s5', 'DelStrain_s6', 'DelStrain_s7', 'DelStrain_s8', 'DelStrain_s9',
-                                 'DelStrain_s10', 'DelStrain_s11', 'DelStrain_s12', 'DelStrain_s13', 'DelStrain_s14', 'DelStrain_s15',
-                                 'CW_Lfw', 'CW_Sw', 'CW_tot', 'WW_Lfw', 'WW_Sw', 'WW_tot'],
+                                 'DelStrain_s10', 'DelStrain_s11', 'DelStrain_s12', 'DelStrain_s13', 'DelStrain_s14', 'DelStrain_s15'],
                         index=[time_g])
 
     if match_strain:
