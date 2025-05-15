@@ -2,3 +2,4 @@ site_name: Monarch
 nav:
   - Growth: growth.md
   - Beats: single_beats.md
+  - Interactive Graphs: http://localhost:8866/

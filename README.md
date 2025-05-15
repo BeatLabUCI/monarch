@@ -28,3 +28,9 @@ import monarch
 
 ## Using Monarch
 We include several Jupyter notebooks to demonstrate how to use MONARCH. These notebooks can be found in the `examples` directory.
+
+## Using the Monarch GUI
+For using the Monarch graphical user interface, open a terminal and cd into monarch-docs, then docs. 
+After that, run the command "voila monarch_starter_interactive.ipynb" Next, open 
+another terminal. In that terminal, cd into monarch-docs, then run the command "mkdocs serve".
+Now, the GUI should be fully functional!
