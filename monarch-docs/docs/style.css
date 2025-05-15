@@ -1,0 +1,170 @@
+/* Base Reset and Typography */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, menu, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+main, nav, output, ruby, section, summary,
+time, mark, audio, video {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline;
+}
+
+/* Base document settings */
+body {
+  background-color: #fff;
+  color: #111;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  padding: 1rem;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: normal;
+  margin: 1.5rem 0 0.5rem;
+  line-height: 1.2;
+}
+
+/* Paragraphs and lists */
+p, ul, ol {
+  margin-bottom: 1rem;
+}
+
+/* Links with interactive hover effect */
+a {
+  color: #111;
+  text-decoration: none;
+  border-bottom: 1px solid #111;
+  transition: color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+a:hover, a:focus {
+  color: #fff;
+  background-color: #111;
+  border-color: #fff;
+}
+
+/* Code blocks and inline code */
+pre, code {
+  font-family: "Courier New", Courier, monospace;
+  background: #f7f7f7;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+}
+
+pre {
+  overflow-x: auto;
+  padding: 1rem;
+  background-color: #f0f0f0;
+}
+
+/* Blockquotes for emphasis */
+blockquote {
+  border-left: 4px solid #111;
+  margin: 1rem 0;
+  padding-left: 1rem;
+  font-style: italic;
+  color: #555;
+}
+
+/* Horizontal rules for separation */
+hr {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 2rem 0;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+table, th, td {
+  border: 1px solid #ddd;
+}
+
+th, td {
+  padding: 0.5rem;
+  text-align: left;
+}
+
+/* Interactive buttons for potential UI elements */
+button {
+  background-color: #fff;
+  border: 2px solid #111;
+  color: #111;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+button:hover, button:focus {
+  background-color: #111;
+  color: #fff;
+}
+
+/* Responsive text for small devices */
+@media (max-width: 600px) {
+  body {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+}
+
+
+/* ─── Override MkDocs header bar ─── */
+.md-header {
+  background-color: #111 !important;
+}
+
+/* header nav container (for MkDocs ≥1.4) */
+.md-header .md-header-nav {
+  background-color: #111 !important;
+}
+
+/* ─── Override MkDocs sidebar ─── */
+.md-sidebar {
+  background-color: #111 !important;
+}
+
+/* ─── Top‑nav links ─── */
+.md-header-nav__link,
+.md-header-nav__link:visited {
+  color: #fff !important;
+}
+
+.md-header-nav__link:hover,
+.md-header-nav__link:focus {
+  color: #111 !important;
+  background-color: #fff !important;
+}
+
+/* ─── Sidebar links ─── */
+.md-nav__link,
+.md-nav__link:visited {
+  color: #fff !important;
+}
+
+.md-nav__link:hover,
+.md-nav__link--active {
+  color: #111 !important;
+  background-color: #fff !important;
+}
+
+.md-navbar-collapse {
+  background-color: #111 !important;
+}
