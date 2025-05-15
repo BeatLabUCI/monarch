@@ -30,7 +30,11 @@ import monarch
 We include several Jupyter notebooks to demonstrate how to use MONARCH. These notebooks can be found in the `examples` directory.
 
 ## Using the Monarch GUI
-For using the Monarch graphical user interface, open a terminal and cd into monarch-docs, 
-then run the command "mkdocs serve". Next, open another terminal and cd into monarch-docs, then docs. 
+The monarch GUI requires the packages "mkdocs" and "voila". Install them locally on your machine using 
+the commands "pip install voila" and "pip install mkdocs". After that, for using the Monarch graphical user interface, open a terminal and cd into monarch-docs, 
+then run the command "mkdocs serve". A local link should pop up in the terminal. This link is the development version of the website for Monarch's documentation.
+This includes the growth and beats demo notebooks, as well as a link to the interactive graphs.
+After clicking on that link, you should be led to the web browser.
+Next, navigate back to your IDE and open another terminal tab and cd into monarch-docs, then docs. 
 Then, run the command "voila monarch_starter_interactive.ipynb" 
 Now, the GUI should be fully functional!
