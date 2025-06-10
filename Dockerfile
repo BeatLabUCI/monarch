@@ -5,7 +5,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Copy your files into the container
-COPY . /app
+COPY monarch-docs /app
 
 # Install system dependencies (optional)
 RUN apt-get update && apt-get install -y build-essential && apt-get clean
