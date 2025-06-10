@@ -1,170 +1,678 @@
-/* Base Reset and Typography */
-html, body, div, span, applet, object, iframe,
-h1, h2, h3, h4, h5, h6, p, blockquote, pre,
-a, abbr, acronym, address, big, cite, code,
-del, dfn, em, img, ins, kbd, q, s, samp,
-small, strike, strong, sub, sup, tt, var,
-b, u, i, center,
-dl, dt, dd, menu, ol, ul, li,
-fieldset, form, label, legend,
-table, caption, tbody, tfoot, thead, tr, th, td,
-article, aside, canvas, details, embed,
-figure, figcaption, footer, header, hgroup,
-main, nav, output, ruby, section, summary,
-time, mark, audio, video {
+/*!* Base Reset and Typography *!*/
+/*html, body, div, span, applet, object, iframe,*/
+/*h1, h2, h3, h4, h5, h6, p, blockquote, pre,*/
+/*a, abbr, acronym, address, big, cite, code,*/
+/*del, dfn, em, img, ins, kbd, q, s, samp,*/
+/*small, strike, strong, sub, sup, tt, var,*/
+/*b, u, i, center,*/
+/*dl, dt, dd, menu, ol, ul, li,*/
+/*fieldset, form, label, legend,*/
+/*table, caption, tbody, tfoot, thead, tr, th, td,*/
+/*article, aside, canvas, details, embed,*/
+/*figure, figcaption, footer, header, hgroup,*/
+/*main, nav, output, ruby, section, summary,*/
+/*time, mark, audio, video {*/
+/*  margin: 0;*/
+/*  padding: 0;*/
+/*  border: 0;*/
+/*  font-size: 100%;*/
+/*  font: inherit;*/
+/*  vertical-align: baseline;*/
+/*}*/
+
+/*!* Base document settings *!*/
+/*body {*/
+/*  background-color: #fff;*/
+/*  color: #111;*/
+/*  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
+/*  line-height: 1.6;*/
+/*  padding: 1rem;*/
+/*}*/
+
+/*!* Headings *!*/
+/*h1, h2, h3, h4, h5, h6 {*/
+/*  font-weight: normal;*/
+/*  margin: 1.5rem 0 0.5rem;*/
+/*  line-height: 1.2;*/
+/*}*/
+
+/*!* Paragraphs and lists *!*/
+/*p, ul, ol {*/
+/*  margin-bottom: 1rem;*/
+/*}*/
+
+/*!* Links with interactive hover effect *!*/
+/*a {*/
+/*  color: #111;*/
+/*  text-decoration: none;*/
+/*  border-bottom: 1px solid #111;*/
+/*  transition: color 0.2s ease-in-out, border-color 0.2s ease-in-out;*/
+/*}*/
+
+/*a:hover, a:focus {*/
+/*  color: #fff;*/
+/*  background-color: #111;*/
+/*  border-color: #fff;*/
+/*}*/
+
+/*!* Code blocks and inline code *!*/
+/*pre, code {*/
+/*  font-family: "Courier New", Courier, monospace;*/
+/*  background: #f7f7f7;*/
+/*  padding: 0.2rem 0.4rem;*/
+/*  border-radius: 3px;*/
+/*}*/
+
+/*pre {*/
+/*  overflow-x: auto;*/
+/*  padding: 1rem;*/
+/*  background-color: #f0f0f0;*/
+/*}*/
+
+/*!* Blockquotes for emphasis *!*/
+/*blockquote {*/
+/*  border-left: 4px solid #111;*/
+/*  margin: 1rem 0;*/
+/*  padding-left: 1rem;*/
+/*  font-style: italic;*/
+/*  color: #555;*/
+/*}*/
+
+/*!* Horizontal rules for separation *!*/
+/*hr {*/
+/*  border: none;*/
+/*  border-top: 1px solid #ccc;*/
+/*  margin: 2rem 0;*/
+/*}*/
+
+/*!* Tables *!*/
+/*table {*/
+/*  width: 100%;*/
+/*  border-collapse: collapse;*/
+/*  margin-bottom: 1rem;*/
+/*}*/
+
+/*table, th, td {*/
+/*  border: 1px solid #ddd;*/
+/*}*/
+
+/*th, td {*/
+/*  padding: 0.5rem;*/
+/*  text-align: left;*/
+/*}*/
+
+/*!* Interactive buttons for potential UI elements *!*/
+/*button {*/
+/*  background-color: #fff;*/
+/*  border: 2px solid #111;*/
+/*  color: #111;*/
+/*  padding: 0.5rem 1rem;*/
+/*  font-size: 1rem;*/
+/*  cursor: pointer;*/
+/*  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;*/
+/*}*/
+
+/*button:hover, button:focus {*/
+/*  background-color: #111;*/
+/*  color: #fff;*/
+/*}*/
+
+/*!* Responsive text for small devices *!*/
+/*@media (max-width: 600px) {*/
+/*  body {*/
+/*    padding: 0.5rem;*/
+/*    font-size: 0.9rem;*/
+/*  }*/
+/*}*/
+
+
+/*!* ─── Override MkDocs header bar ─── *!*/
+/*.md-header {*/
+/*  background-color: #111 !important;*/
+/*}*/
+
+/*!* header nav container (for MkDocs ≥1.4) *!*/
+/*.md-header .md-header-nav {*/
+/*  background-color: #111 !important;*/
+/*}*/
+
+/*!* ─── Override MkDocs sidebar ─── *!*/
+/*.md-sidebar {*/
+/*  background-color: #111 !important;*/
+/*}*/
+
+/*!* ─── Top‑nav links ─── *!*/
+/*.md-header-nav__link,*/
+/*.md-header-nav__link:visited {*/
+/*  color: #fff !important;*/
+/*}*/
+
+/*.md-header-nav__link:hover,*/
+/*.md-header-nav__link:focus {*/
+/*  color: #111 !important;*/
+/*  background-color: #fff !important;*/
+/*}*/
+
+/*!* ─── Sidebar links ─── *!*/
+/*.md-nav__link,*/
+/*.md-nav__link:visited {*/
+/*  color: #fff !important;*/
+/*}*/
+
+/*.md-nav__link:hover,*/
+/*.md-nav__link--active {*/
+/*  color: #111 !important;*/
+/*  background-color: #fff !important;*/
+/*}*/
+
+/*.md-navbar-collapse {*/
+/*  background-color: #111 !important;*/
+/*}*/
+
+
+/* ==========================================================================
+   ReadTheDocs-Like Theme Overrides for MkDocs
+   Save this file (e.g., overrides.css) and reference it in mkdocs.yml:
+
+   extra_css:
+     - css/overrides.css
+   ========================================================================== */
+
+/* ----------------------------------------
+   1. Base Typography and Colors
+   ---------------------------------------- */
+
+/* Use a clean, legible sans-serif font and set global text color */
+body {
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  color: #3E3E3E;
+  line-height: 1.6;
+  background-color: #ffffff;
   margin: 0;
   padding: 0;
-  border: 0;
-  font-size: 100%;
-  font: inherit;
-  vertical-align: baseline;
 }
 
-/* Base document settings */
-body {
-  background-color: #fff;
-  color: #111;
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  line-height: 1.6;
-  padding: 1rem;
-}
-
-/* Headings */
-h1, h2, h3, h4, h5, h6 {
-  font-weight: normal;
-  margin: 1.5rem 0 0.5rem;
-  line-height: 1.2;
-}
-
-/* Paragraphs and lists */
-p, ul, ol {
+/* Headings: distinct sizes and weights similar to ReadTheDocs */
+h1 {
+  font-size: 2.25rem;
+  font-weight: 400;
   margin-bottom: 1rem;
+  color: #2C3E50;
 }
 
-/* Links with interactive hover effect */
-a {
-  color: #111;
-  text-decoration: none;
-  border-bottom: 1px solid #111;
-  transition: color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+h2 {
+  font-size: 1.75rem;
+  font-weight: 400;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: #34495E;
 }
 
-a:hover, a:focus {
-  color: #fff;
-  background-color: #111;
-  border-color: #fff;
+h3 {
+  font-size: 1.25rem;
+  font-weight: 400;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+  color: #4A4A4A;
 }
 
-/* Code blocks and inline code */
-pre, code {
-  font-family: "Courier New", Courier, monospace;
-  background: #f7f7f7;
-  padding: 0.2rem 0.4rem;
-  border-radius: 3px;
+h4, h5, h6 {
+  font-weight: 400;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: #4A4A4A;
 }
 
-pre {
-  overflow-x: auto;
-  padding: 1rem;
-  background-color: #f0f0f0;
-}
-
-/* Blockquotes for emphasis */
-blockquote {
-  border-left: 4px solid #111;
+/* Paragraphs and lists spacing */
+p {
   margin: 1rem 0;
-  padding-left: 1rem;
-  font-style: italic;
-  color: #555;
 }
 
-/* Horizontal rules for separation */
+ul, ol {
+  margin: 1rem 0 1rem 1.5rem;
+}
+
+/* Strong and emphasis styling */
+strong {
+  font-weight: 600;
+}
+
+em {
+  font-style: italic;
+}
+
+/* Links */
+a {
+  color: #2980B9;
+  text-decoration: none;
+}
+a:hover,
+a:focus {
+  text-decoration: underline;
+}
+
+/* Horizontal rule */
 hr {
   border: none;
-  border-top: 1px solid #ccc;
+  border-top: 1px solid #e7e7e7;
   margin: 2rem 0;
+}
+
+/* ----------------------------------------
+   2. Sidebar Navigation (Left Pane)
+   ---------------------------------------- */
+
+/* Container for the mkdocs sidebar */
+.md-sidebar {
+  background-color: #f8f8f8;
+  border-right: 1px solid #e7e7e7;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 300px;
+  padding-top: 1rem;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+/* Prevent scrolling behind the fixed sidebar */
+.md-main {
+  margin-left: 300px;
+}
+
+/* MkDocs navigation list styling */
+.md-nav__title {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  padding: 1rem 1.5rem 0.5rem;
+  color: #7F8C8D;
+}
+
+.md-nav__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Top-level links */
+.md-nav__link {
+  display: block;
+  padding: 0.5rem 1.5rem;
+  font-size: 0.95rem;
+  color: #2980B9;
+  border-left: 3px solid transparent;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.md-nav__link:hover {
+  background-color: #e1e5e8;
+}
+
+.md-nav__link--active {
+  font-weight: 600;
+  color: #2C3E50;
+  background-color: #e1e5e8;
+  border-left-color: #2980B9;
+}
+
+/* Nested navigation (sub-pages) */
+.md-nav__list .md-nav__link {
+  padding-left: 2.5rem;
+  font-size: 0.9rem;
+}
+
+/* Collapse/Expand toggle arrows */
+.md-nav__link .md-nav__toggle {
+  font-size: 0.8rem;
+  margin-right: 0.5rem;
+  color: #7F8C8D;
+}
+
+/* ----------------------------------------
+   3. Header Bar (Fixed Top)
+   ---------------------------------------- */
+
+.md-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e7e7e7;
+  padding: 1rem 2rem;
+  position: fixed;
+  top: 0;
+  left: 300px;
+  right: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+}
+
+.md-header .md-logo {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2C3E50;
+  text-decoration: none;
+}
+
+.md-header nav {
+  margin-left: auto;
+}
+
+.md-header nav a {
+  margin-left: 1.5rem;
+  font-size: 0.9rem;
+  color: #2980B9;
+}
+
+.md-header nav a:hover {
+  color: #2C3E50;
+}
+
+/* Push page content below header */
+.md-content {
+  padding-top: 3.5rem;
+}
+
+/* ----------------------------------------
+   4. Main Content Area
+   ---------------------------------------- */
+
+/* Container for articles/pages */
+.md-content {
+  max-width: 800px;
+  margin: 0 auto 3rem auto;
+  padding: 2rem 2rem 0 2rem;
+}
+
+/* Adjust top padding to avoid overlap with fixed header */
+.md-page {
+  padding-top: 1rem;
+}
+
+/* Images: center and responsive */
+.md-content img {
+  display: block;
+  margin: 1.5rem auto;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Blockquotes */
+blockquote {
+  border-left: 4px solid #e7e7e7;
+  margin: 1.5rem 0;
+  padding-left: 1rem;
+  color: #666666;
+  font-style: italic;
+  background-color: #f9f9f9;
+}
+
+/* Code and preformatted blocks */
+
+/* Inline code */
+code {
+  background-color: #f5f5f5;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: "Source Code Pro", Menlo, Consolas, Monaco, "Courier New", monospace;
+  font-size: 0.95rem;
+}
+
+/* Code blocks */
+pre {
+  background-color: #f5f5f5;
+  padding: 1rem;
+  overflow-x: auto;
+  border-radius: 4px;
+  font-family: "Source Code Pro", Menlo, Consolas, Monaco, "Courier New", monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin: 1.5rem 0;
+}
+
+/* Syntax highlighting (if a plugin is used) */
+pre .hljs-comment,
+pre .hljs-quote {
+  color: #7F8C8D;
+}
+pre .hljs-keyword,
+pre .hljs-selector-tag,
+pre .hljs-literal,
+pre .hljs-section,
+pre .hljs-link {
+  color: #2C3E50;
+}
+pre .hljs-string,
+pre .hljs-title,
+pre .hljs-name,
+pre .hljs-type,
+pre .hljs-symbol {
+  color: #2980B9;
+}
+pre .hljs-number,
+pre .hljs-meta {
+  color: #D35400;
+}
+pre .hljs-attribute {
+  color: #16A085;
+}
+pre .hljs-built_in,
+pre .hljs-builtin-name {
+  color: #8E44AD;
 }
 
 /* Tables */
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 1rem;
-}
-
-table, th, td {
-  border: 1px solid #ddd;
+  margin: 1.5rem 0;
 }
 
 th, td {
-  padding: 0.5rem;
+  border: 1px solid #e7e7e7;
+  padding: 0.75rem 1rem;
   text-align: left;
 }
 
-/* Interactive buttons for potential UI elements */
-button {
-  background-color: #fff;
-  border: 2px solid #111;
-  color: #111;
+th {
+  background-color: #f8f8f8;
+  font-weight: 600;
+}
+
+tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+/* Lists (bullets and numbers) */
+ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+}
+
+ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+}
+
+ul ul,
+ol ol,
+ul ol,
+ol ul {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Footnotes */
+.footnote-ref {
+  font-size: 0.85rem;
+}
+
+.footnote {
+  font-size: 0.85rem;
+  margin-top: 1rem;
+  border-top: 1px solid #e7e7e7;
+  padding-top: 1rem;
+}
+
+/* ----------------------------------------
+   5. Footer
+   ---------------------------------------- */
+
+.md-footer {
+  border-top: 1px solid #e7e7e7;
+  padding: 1.5rem 2rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #777777;
+  background-color: #ffffff;
+}
+
+/* ----------------------------------------
+   6. Search Box Styling
+   ---------------------------------------- */
+
+/* Container to align search box in header or sidebar if using a plugin */
+.md-search {
+  position: relative;
+}
+
+.md-search input[type="text"] {
+  width: 100%;
   padding: 0.5rem 1rem;
-  font-size: 1rem;
+  font-size: 0.95rem;
+  border: 1px solid #e7e7e7;
+  border-radius: 3px;
+  background-color: #ffffff;
+  color: #3E3E3E;
+}
+
+.md-search input[type="text"]:focus {
+  outline: none;
+  border-color: #2980B9;
+  box-shadow: 0 0 3px rgba(41, 128, 185, 0.3);
+}
+
+/* Search results dropdown */
+.md-search__results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: #ffffff;
+  border: 1px solid #e7e7e7;
+  max-height: 300px;
+  overflow-y: auto;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 1001;
+}
+
+.md-search__result {
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #e7e7e7;
   cursor: pointer;
-  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
-button:hover, button:focus {
-  background-color: #111;
-  color: #fff;
+.md-search__result:last-child {
+  border-bottom: none;
 }
 
-/* Responsive text for small devices */
-@media (max-width: 600px) {
-  body {
-    padding: 0.5rem;
-    font-size: 0.9rem;
+.md-search__result:hover {
+  background-color: #f1f1f1;
+}
+
+/* ----------------------------------------
+   7. Responsive Adjustments
+   ---------------------------------------- */
+
+/* On smaller screens, collapse sidebar and adjust content padding */
+@media screen and (max-width: 1024px) {
+  .md-sidebar {
+    position: relative;
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid #e7e7e7;
+  }
+  .md-main {
+    margin-left: 0;
+  }
+  .md-header {
+    left: 0;
+  }
+  .md-content {
+    padding: 1.5rem;
   }
 }
 
-
-/* ─── Override MkDocs header bar ─── */
-.md-header {
-  background-color: #111 !important;
+/* Further adjustments for very small screens */
+@media screen and (max-width: 640px) {
+  /* Hide sidebar by default on mobile */
+  .md-sidebar {
+    display: none;
+  }
+  /* Add a toggle button if desired (requires JS) */
+  .md-toggle-sidebar {
+    display: block;
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background-color: #2980B9;
+    color: #ffffff;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+  .md-content {
+    padding: 1rem;
+  }
 }
 
-/* header nav container (for MkDocs ≥1.4) */
-.md-header .md-header-nav {
-  background-color: #111 !important;
+/* ----------------------------------------
+   8. Utility Classes (Optional)
+   ---------------------------------------- */
+
+/* Clearfix for floated elements */
+.clearfix::after {
+  content: "";
+  display: table;
+  clear: both;
 }
 
-/* ─── Override MkDocs sidebar ─── */
-.md-sidebar {
-  background-color: #111 !important;
+/* Text alignment utilities */
+.text-center {
+  text-align: center;
 }
 
-/* ─── Top‑nav links ─── */
-.md-header-nav__link,
-.md-header-nav__link:visited {
-  color: #fff !important;
+.text-right {
+  text-align: right;
 }
 
-.md-header-nav__link:hover,
-.md-header-nav__link:focus {
-  color: #111 !important;
-  background-color: #fff !important;
+.text-left {
+  text-align: left;
 }
 
-/* ─── Sidebar links ─── */
-.md-nav__link,
-.md-nav__link:visited {
-  color: #fff !important;
-}
+/* Margin utilities */
+.mt-1 { margin-top: 0.25rem !important; }
+.mt-2 { margin-top: 0.5rem  !important; }
+.mt-3 { margin-top: 1rem    !important; }
+.mt-4 { margin-top: 1.5rem  !important; }
+.mt-5 { margin-top: 2rem    !important; }
 
-.md-nav__link:hover,
-.md-nav__link--active {
-  color: #111 !important;
-  background-color: #fff !important;
-}
+.mb-1 { margin-bottom: 0.25rem !important; }
+.mb-2 { margin-bottom: 0.5rem  !important; }
+.mb-3 { margin-bottom: 1rem    !important; }
+.mb-4 { margin-bottom: 1.5rem  !important; }
+.mb-5 { margin-bottom: 2rem    !important; }
 
-.md-navbar-collapse {
-  background-color: #111 !important;
-}
+/* Padding utilities */
+.pt-1 { padding-top: 0.25rem !important; }
+.pt-2 { padding-top: 0.5rem  !important; }
+.pt-3 { padding-top: 1rem    !important; }
+.pt-4 { padding-top: 1.5rem  !important; }
+.pt-5 { padding-top: 2rem    !important; }
+
+.pb-1 { padding-bottom: 0.25rem !important; }
+.pb-2 { padding-bottom: 0.5rem  !important; }
+.pb-3 { padding-bottom: 1rem    !important; }
+.pb-4 { padding-bottom: 1.5rem  !important; }
+.pb-5 { padding-bottom: 2rem    !important; }

@@ -1,5 +1,8 @@
 site_name: Monarch
 nav:
+  - Single Heartbeat Demonstration: single_beats.md
   - Growth: growth.md
-  - Beats: single_beats.md
   - Interactive Graphs: http://localhost:8866/
+
+theme:
+  name: readthedocs

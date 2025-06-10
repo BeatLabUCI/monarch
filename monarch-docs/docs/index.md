@@ -33,4 +33,4 @@ import monarch
 ```
 
 ## Using Monarch
-We include several Jupyter notebooks to demonstrate how to use MONARCH. These notebooks can be found in the `examples` directory.
+We include several Jupyter notebooks to demonstrate how to use MONARCH. These notebooks can be found on separate tabs on this webpage!

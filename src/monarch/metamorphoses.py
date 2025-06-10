@@ -30,6 +30,7 @@ def pv_loop(model, x_lim=None, y_lim=None, compartments=("LV", ), legend=True, c
     # Axes
     plt.xlabel("Volume (mL)", fontsize=12)
     plt.ylabel("Pressure (mmHg)", fontsize=12)
+    plt.title("Pressure-Volume Loops", fontsize=12)
 
     # Set lower y limit to 0
     ax.set_ylim(bottom=0)
@@ -420,6 +421,9 @@ def cardiac_geometry(model, file_path=None, file_name=None, time_frame=0, save_n
     axlim = model.heart.xm.max() * 1.1
     plt.xlim(left=-axlim, right=axlim)
     plt.ylim(bottom=-axlim, top=axlim)
+    plt.title("Cardiac Geometry", fontsize=12)
+    plt.xlabel("Distance from Origin Point(mm)", fontsize=12)
+    plt.ylabel("Distance from Origin Point (mm)", fontsize=12)
     ax.set_aspect('equal', adjustable='box')
 
     # Plot ventricular geometry
