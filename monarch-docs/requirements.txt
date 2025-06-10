@@ -1,0 +1,5 @@
+jupyterlab
+voila
+numpy
+matplotlib
+ipywidgets
