@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Growth - Monarch</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Growth";
+        var mkdocs_page_input_path = "growth.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Monarch
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../single_beats/">Single Heartbeat Demonstration</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Growth</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#background">Background</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#mechanics-based-growth-models">Mechanics-based growth models</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#drivers-of-growth">Drivers of growth</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#example-mitral-valve-regurgitation">Example: mitral valve regurgitation</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#isotropic-growth">Isotropic growth</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#references">References</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="" href="http://localhost:8866/">Interactive Graphs</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Monarch</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Growth</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="simulating-growth">Simulating growth</h1>
+<p>The true strength of this package is in its ability to simulate cardiac growth. This notebook will guide you through the process of simulating cardiac growth using a canine model with mitral valve regurgitation as an example. We recommend to first familiarize yourself with the single beat simulations in the <code>single_beat.ipynb</code> notebook before proceeding.</p>
+<h2 id="background">Background</h2>
+<h3 id="mechanics-based-growth-models">Mechanics-based growth models</h3>
+<p>We included several mechanics-based growth relationships based on reference [1-4]. The choice of growth model is up to the user and can be specified in the input file in <code>growth.type</code>. We use the kinematic growth model framework from Rodriguez et al. [5]. In brief, the way that all these models work is that they compare the current state of mechanics (typically elastic stretch) in each cardiac wall patch to that of a previous state. The growth model then calculates the amount of growth based on the difference between these states. The growth tensor <em>F_g</em> for each cardiac wall patch can be calculated using the following growth relationships:
+1. <code>transverse_jones</code>: Transversely isotropic growth driven by changes in fiber (fiber/cross-fiber growth) and radial (radial growth) stretch based on Jones &amp; Oomen [1].
+2. <code>transverse_witzenburg</code>: Transversely isotropic growth driven by changes in fiber (fiber/cross-fiber growth) and radial (radial growth) stretch based on Witzenburg &amp; Holmes [2].
+3. <code>isotropic_oomen</code>: Isotropic growth driven by changes in fiber stretch based on Oomen et al. [3].
+4. <code>isotropic_jones</code>: Isotropic growth driven by changes in fiber stretch based on Jones &amp; Oomen [1].
+5. <code>transverse_hybrid</code>: Combination of the transverse_jones and transverse_witzenburg growth models.</p>
+<p>If you desire a different growth model, you can conveniently add your own growth model(s) in the <code>growth.py</code> file.</p>
+<h3 id="drivers-of-growth">Drivers of growth</h3>
+<p>The changes in mechanics that drive growth can be induced by a variety of pathologies or clinical interventions. The boundary conditions needed to simulate these can be specified in the <code>growth</code> section of the input file. The following drivers are implemented:
+1. Systemic arterial resistance (<code>growth.ras</code>): to simulate changes in afterload e.g. due to aortic stenosis.
+2. Mitral valve regurgitation (<code>growth.rmvb</code>): to simulate changes in preload due to mitral valve regurgitation.
+3. Abnormal heart rate (<code>growth.hr</code>): to simulate changes in heart rate.
+4. Blood volume (<code>growth.sbv</code>): to simulate changes in blood volume and/or vasoconstriction.
+5. Myocardial ischemia (<code>growth.ischemic</code>): to simulate changes in contractility due to acute ischemia (no stiffening during chronic ischemia is implemented as of yet).
+6. Dyssynchrony (<code>growth.t_act</code>): to simulate changes in activation timing such as in left bundle branch block and cardiac resynchronization therapy.</p>
+<p>All these parameters will override the values specified in the other parameter sections (<code>heart</code>, <code>circulation</code>, <code>resistances</code>). The first 4 parameters need to be specified for each time point in the growth simulation, whereas changes in ischemia and dyssynchrony can be triggered at specific time points and need to be defined for each cardiac wall patch.</p>
+<pre><code class="language-python"># Jupyter magic
+%load_ext autoreload
+%autoreload 2
+</code></pre>
+<h2 id="example-mitral-valve-regurgitation">Example: mitral valve regurgitation</h2>
+<p>We will here simulate transversely isotropic growth in a canine model with mitral valve regurgitation based on Jones &amp; Oomen [1]. Just as in the single beat simulations, we need to specify the input file which contains the baseline model characteristics as well the growth boundary conditions. We use the <code>growth.rmvb</code> parameter to simulate mitral valve regurgitation and the growth model <code>transverse_jones</code> to simulate transversely isotropic growth. The model parameters are set to reflect a typical mitral regurgitation case in canines, see [1] for a more rigorous parameter calibration.</p>
+<p>Just like in the single beat simulations, we first need to (1) initialize the model, (2) simulate growth, and (3) visualize the results. Start with model intitialization and print the baseline and acute mitral valve regurgitation parameters:</p>
+<pre><code class="language-python">from monarch import Hatch
+import pathlib
+
+# Initialize model
+input_dir = pathlib.Path.cwd() / &quot;input_files&quot;
+input_canine = input_dir / &quot;canine_vo&quot;
+beats = Hatch(input_canine)
+
+print(&quot;Growth type: &quot; + beats.growth.type)
+print(&quot;Baseline R_mvb: &quot; + str(beats.growth.rmvb[0]))
+print(&quot;Acute R_mvb: &quot; + str(beats.growth.rmvb[1]))
+</code></pre>
+<pre><code>Growth type: transverse_jones
+Baseline R_mvb: 10000000000.0
+Acute R_mvb: 0.3
+</code></pre>
+<p>A lower resistance means there is more regurgitation, with the intitial value set sufficiently high to ensure no regurgitation. We can now simulate growth , note that just like in the single beat simulations, the first simulation you run may take a while as the model is compiled. Subsequent simulations will be faster, rerun the cell to see this for yourself.</p>
+<pre><code class="language-python"># Simulate growth
+beats.let_it_grow()
+</code></pre>
+<p>All model readouts are included in a Pandas format table <code>beat.growth.outputs</code>, similar to the single beat <code>beat.outputs</code> table but now every row includes a growth time point, with the index indicating which time point (in days).</p>
+<pre><code class="language-python">beats.growth.outputs
+</code></pre>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+</div>
+
+<p>For easier analysis, any of the growth outputs can be plotted over time using the <code>plot_growth</code> function. The function takes a list of outputs (and optional units for plotting purposes) to plot. Here we plot the left ventricular end-diastolic volume (LVEDV) and end-systolic volume (LVESV):</p>
+<pre><code class="language-python">import monarch.metamophoses as meta
+
+meta.plot_growth(beats, [&quot;LVEDV&quot;, &quot;LVESV&quot;], units=[&quot;mL&quot;, &quot;mL&quot;])
+</code></pre>
+<p><img alt="png" src="../growth_files/growth_9_0.png" /></p>
+<p>One can also plot the pressure-volume loops of a single compartment over time. Here we plot the pressure-volume loop of the left ventricle at all time points (default); and the first, second, and last time point (specified through <code>index</code> argument):</p>
+<pre><code class="language-python">meta.pv_loop_growth(beats)
+meta.pv_loop_growth(beats, index=(0, 1, -1))
+</code></pre>
+<p><img alt="png" src="../growth_files/growth_11_0.png" /></p>
+<p><img alt="png" src="../growth_files/growth_11_1.png" /></p>
+<p>So why did the LV grow? Remember that we are using stretch-driven growth relationships, so let's visualize the changes in maximum fiber stretch and stress in all three walls:</p>
+<pre><code class="language-python">meta.plot_growth(beats, [&quot;MaxStretchLfw&quot;, &quot;MaxStretchSw&quot;, &quot;MaxStretchRfw&quot;, &quot;MaxStressLfw&quot;, &quot;MaxStressSw&quot;, &quot;MaxStressRfw&quot;], units=[&quot;-&quot;, &quot;-&quot;, &quot;-&quot;])
+</code></pre>
+<p><img alt="png" src="../growth_files/growth_13_0.png" /></p>
+<p>From these figures, we anticipate that the left free wall (LFW) and septal wall (SW) will dilate due to the increase in maximum fiber stretch, and initially thin because of a decrease in maximum fiber stress. The right free wall (RFW) experience only very small changes in maximum fiber stretch and stress, and thus should not grow.</p>
+<p>We can test our hypothesis by looking at the growth tensor <em>F_g</em>, which can be visualized using the <code>plot_fg</code> function. Indeed, note how there is only noticeable growth in the left free wall (LFW) and septal wall (SW) as mitral regurgitation only effects the mechanics in the left ventricle. As expected from experimental and clinical studies, we observe dilation (increase in fiber (11) and cross-fiber (22) components of the growth tensor) and wall thinning (decrease in the radial (33) component of the growth tensor) in the LFW and SW. Initially, the change in wall volume due to growth (<em>J_g</em>) decreases due to faster thinning than dilation, but eventually the wall volume increases due to dilation exceeding wall thinning.</p>
+<pre><code class="language-python">meta.plot_fg(beats)
+</code></pre>
+<p><img alt="png" src="../growth_files/growth_15_0.png" /></p>
+<h3 id="isotropic-growth">Isotropic growth</h3>
+<p>Let's now simulate isotropic growth in a canine model with mitral valve regurgitation. We will use the <code>isotropic_jones</code> growth model to simulate isotropic growth.</p>
+<pre><code class="language-python"># Initialize model and change growth type
+beats = Hatch(input_canine)
+beats.growth.type = &quot;isotropic_jones&quot;
+
+# Simulate growth
+beats.let_it_grow()
+</code></pre>
+<p>Use the standard plotting functions to visualize the results, note now how there is a smaller increase in LVEDV and even a decrease in LVESV compared to the transversely isotropic growth model.</p>
+<pre><code class="language-python">meta.plot_growth(beats, [&quot;LVEDV&quot;, &quot;LVESV&quot;], units=[&quot;mL&quot;, &quot;mL&quot;])
+meta.pv_loop_growth(beats)
+</code></pre>
+<p><img alt="png" src="../growth_files/growth_19_0.png" /></p>
+<p><img alt="png" src="../growth_files/growth_19_1.png" /></p>
+<p>This is due to the isotropic growth model not allowing for wall thinning:</p>
+<pre><code class="language-python">meta.plot_fg(beats)
+</code></pre>
+<p><img alt="png" src="../growth_files/growth_21_0.png" /></p>
+<h2 id="references">References</h2>
+<p>[1] Jones, C. E. &amp; Oomen, P. J. A. Synergistic Biophysics and Machine Learning Modeling to Rapidly Predict Cardiac Growth Probability. bioRxiv 2024.07.17.603959 (2024) doi:10.1101/2024.07.17.603959.
+[2] Oomen, P. J. A., Phung, T.-K. N., Weinberg, S. H., Bilchick, K. C. &amp; Holmes, J. W. A rapid electromechanical model to predict reverse remodeling following cardiac resynchronization therapy. Biomech Model Mechan 21, 231–247 (2022).
+[3] Witzenburg, C. M. &amp; Holmes, J. W. Predicting the Time Course of Ventricular Dilation and Thickening Using a Rapid Compartmental Model. J Cardiovasc Transl 11, 109–122 (2018).
+[4] Göktepe, S., Abilez, O. J., Parker, K. K. &amp; Kuhl, E. A multiscale model for eccentric and concentric cardiac growth through sarcomerogenesis. J Theor Biol 265, 433–442 (2010).
+[5] Rodriguez, E. K., Hoger, A. &amp; McCulloch, A. D. Stress-dependent finite growth in soft elastic tissues. J Biomech 27, 455–467 (1994).</p>
+<pre><code class="language-python">
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../single_beats/" class="btn btn-neutral float-left" title="Single Heartbeat Demonstration"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../single_beats/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
