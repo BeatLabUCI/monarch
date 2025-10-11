@@ -349,9 +349,11 @@ def get_outputs(model, time_g=0, match_strain=False):
                              time_events['mv_closes'], time_events['av_closes'],
                              map, hr, dbp, sbp, ed_frame, es_frame, ed_time, es_time, ed_frame_rv, es_frame_rv,
                              ed_time_rv, es_time_rv, lap,
-                             edv_i, esv_i, rvedv_i, rvesv_i, work_lfw, work_sw, co_ras, diff_stretch[0], diff_stretch[1], diff_stretch[2], diff_stretch[3], diff_stretch[4],
-                             diff_stretch[5], diff_stretch[6], diff_stretch[7], diff_stretch[8],diff_stretch[9], diff_stretch[10], diff_stretch[11],
-                             diff_stretch[12], diff_stretch[13], diff_stretch[14], diff_stretch[15]]],
+                             edv_i, esv_i, rvedv_i, rvesv_i, work_lfw, work_sw, co_ras,
+                             # diff_stretch[0], diff_stretch[1], diff_stretch[2], diff_stretch[3], diff_stretch[4],
+                             # diff_stretch[5], diff_stretch[6], diff_stretch[7], diff_stretch[8],diff_stretch[9], diff_stretch[10], diff_stretch[11],
+                             # diff_stretch[12], diff_stretch[13], diff_stretch[14], diff_stretch[15]
+                             ]],
                         columns=['LVEDV', 'LVESV', 'LVEDP', 'LVESP', 'LVMaxP', 'LVMaxdP', 'LVMindP', 'LVSV', 'LVRF', 'LVEF', 'LVCO',
                                  'RVEDV', 'RVESV', 'RVEDP', 'RVESP', 'RVMaxP', 'RVMaxdP', 'RVMindP', 'RVSV', 'RVRF', 'RVEF', 'RVCO',
                                  'EDWthLfw', 'EDWthRfw', 'EDWthSw', 'ESWthLfw', 'ESWthRfw', 'ESWthSw',
@@ -366,9 +368,10 @@ def get_outputs(model, time_g=0, match_strain=False):
                                  'MAP', 'HR', 'DBP', 'SBP',
                                  'IED', 'IES', 'TED', 'TES', 'IED_RV', 'IES_RV', 'TED_RV', 'TES_RV', 'LAP',
                                  'LVEDVi', 'LVESVi', 'RVEDVi', 'RVESVi', 'WorkLfw', 'WorkSw', 'CO_Ras',
-                                 'DelStrain_s0', 'DelStrain_s1', 'DelStrain_s2', 'DelStrain_s3', 'DelStrain_s4',
-                                 'DelStrain_s5', 'DelStrain_s6', 'DelStrain_s7', 'DelStrain_s8', 'DelStrain_s9',
-                                 'DelStrain_s10', 'DelStrain_s11', 'DelStrain_s12', 'DelStrain_s13', 'DelStrain_s14', 'DelStrain_s15'],
+                                 # 'DelStrain_s0', 'DelStrain_s1', 'DelStrain_s2', 'DelStrain_s3', 'DelStrain_s4',
+                                 # 'DelStrain_s5', 'DelStrain_s6', 'DelStrain_s7', 'DelStrain_s8', 'DelStrain_s9',
+                                 # 'DelStrain_s10', 'DelStrain_s11', 'DelStrain_s12', 'DelStrain_s13', 'DelStrain_s14', 'DelStrain_s15'
+                                 ],
                         index=[time_g])
 
     if match_strain:

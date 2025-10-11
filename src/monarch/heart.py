@@ -342,7 +342,7 @@ def guess_vs_ys(model):
     # ys is twice the base radius of the spherical cap
     r_m = ((3 * v_m_lv) / (4 * np.pi)) ** (1 / 3)
     r_s = np.sqrt(h_s * (2 * r_m - h_s))
-    model.heart.ys = 2 * r_s
+    model.heart.ys = r_s
 
     # vs is the volume of the spherical cap
     model.heart.vs = 1 / 6 * np.pi * h_s * (3 * r_s ** 2 + h_s ** 2)
