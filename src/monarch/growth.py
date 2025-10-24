@@ -3,6 +3,7 @@ import pandas as pd
 from .solvers import initialize_solvers_volumes, set_time_vector
 from .heart import set_total_wall_volumes_areas
 from .utils import get_outputs
+from pathlib import Path
 
 
 def initialize(model, use_converged):
@@ -145,6 +146,65 @@ def update_circ_heart(model):
 
         model.change_pars(pars_scaled)
         
+    if model.growth.type == "pediatric":
+        # Age in months
+        x = model.growth.i_g 
+
+        # Use weight data from birth to 36 months from CDC
+        path = Path("input_files") / "wtageinf.xls"
+        if not path.exists():
+            raise FileNotFoundError(f"{path} not found. Make sure the file is in the input_files folder.")
+
+        try:
+            wtage = pd.read_excel(path)  #load file with age and weight data
+        except Exception as e:
+            try:
+                wtage = pd.read_excel(path, engine="xlrd")
+            except Exception as e2:
+                raise RuntimeError(f"Failed to read {path}: {e}; fallback engine error: {e2}")
+
+
+        # Weight depending on age x (in months) 50th percentile
+        weight = wtage['P50'].iloc[x]
+
+        # Calculate heart rate
+        # HR for adult 70kg: 70bpm (Hiebing 2023)
+        model.circulation.hr =  hiebing_scaling(70, -0.25, weight)
+
+        # Calculate Blood Volume:
+        # SBV for adult 70kg: 880mL (Hiebing 2023)
+        model.circulation.sbv = hiebing_scaling(880, 1, weight)
+        print("sbv: ", model.circulation.sbv)
+
+        pars_scaled = {}
+        # Parameters for a healthy 75kg male
+        resistances = {
+            "rvp": 0.015,
+            "rcs": 0.09,
+            "ras": 0.900,
+            "rvs": 0.015,
+            "rcp": 0.020,
+            "rap": 0.300,
+            "rav": 0.025
+        }
+        capacitances = {
+            "cvp": 8.0,
+            "cas": 1.12,
+            "cvs": 70.0,
+            "cap": 13.0
+        }
+
+        for key,value in resistances.items():
+            pars_scaled[key] = hiebing_scaling(value, -3/4, weight)
+
+        for key,value in capacitances.items():
+            pars_scaled[key] = hiebing_scaling(value, 1, weight)
+
+        model.change_pars(pars_scaled)
+
+        model.growth.ras[x] = hiebing_scaling(0.900, -3/4, weight)
+
+        print('ras: ', model.growth.ras)
 
 def grow(model):
     """
@@ -170,6 +230,8 @@ def grow(model):
         f_g = fg_hybrid(model, f_g_old, dt)
     elif model.growth.type == "nonmechanic":
         f_g = fg_nonmechanic(model, f_g_old, dt)
+    elif model.growth.type == "pediatric":
+        f_g = fg_pediatric(model, f_g_old, dt)
     else:
         raise Exception("Growth type not recognized")
 
@@ -214,12 +276,6 @@ def grow(model):
     
     set_total_wall_volumes_areas(model)
 
-    print("this is age ", model.growth.i_g)
-    # print("this is sbv", model.circulation.sbv)
-    print("this is volume ", model.heart.vw)
-    print("this is heart am", model.heart.am_ref)
-    # print("this is hr: ", model.circulation.hr)
-    # print("this is ras and cas ", model.resistances.ras, model.capacitances.cas)
 
 def fg_isotropic(model, f_g, dt):
     """
@@ -475,6 +531,17 @@ def fg_hybrid(model, f_g_old, dt):
     model.growth.s_r_set[model.growth.i_g, :] = lab_r_max_set
 
     return f_g
+
+def fg_pediatric(model, f_g_old, dt):
+    """
+    Based off Hiebing 2023
+    """
+
+    # f_g is just 1
+    f_g = np.ones_like(f_g_old)
+
+    return f_g
+
 
 
 def get_weighted_average(y, window_time, time, i_previous):
