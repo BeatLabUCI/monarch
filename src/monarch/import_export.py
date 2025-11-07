@@ -11,7 +11,9 @@ from .heart import get_wall_thickness
 def import_pars(model, model_pars):
     """Import model parameters from input file and assign to model class"""
     # Load last converged solution
-    with open(os.path.join(str(model_pars) + ".json")) as json_file:
+    if ".json" not in str(model_pars):
+        model_pars = str(model_pars) + ".json"
+    with open(os.path.join(model_pars)) as json_file:
         pars = json.load(json_file)
 
     # Assign self parameters to data classes

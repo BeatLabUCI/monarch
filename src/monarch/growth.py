@@ -309,8 +309,7 @@ def fg_isotropic_goktepe(model, f_g_old, dt):
     f_g[0, :] = f_g[1, :] = f_g[2, :] = theta_f**(1.0/3.0)
 
     # Prevent growth beyond min and max values, can occur if time step is too big
-    f_g = np.clip(f_g.T, [model.growth.theta_f_min, model.growth.theta_f_min, model.growth.theta_r_min],
-                         [model.growth.theta_f_max**2, model.growth.theta_f_max**2, model.growth.theta_r_max]).T
+    f_g = np.clip(f_g.T, model.growth.theta_f_min**(1/3), model.growth.theta_f_max**(1/3)).T
 
     # Store growth stimuli and setpoints
     model.growth.s_l[model.growth.i_g, :] = s_f
@@ -404,8 +403,7 @@ def fg_isotropic_work(model, f_g_old, dt):
     f_g[0, :] = f_g[1, :] = f_g[2, :] = theta_f ** (1.0 / 3.0)  # determinant of Fg = theta
 
     # Prevent growth beyond min and max values, can occur if time step is too big
-    f_g = np.clip(f_g.T, [model.growth.theta_f_min, model.growth.theta_f_min, model.growth.theta_r_min],
-                  [model.growth.theta_f_max ** 2, model.growth.theta_f_max ** 2, model.growth.theta_r_max]).T
+    f_g = np.clip(f_g.T, model.growth.theta_f_min**(1.0 / 3.0), model.growth.theta_f_max**(1.0 / 3.0)).T
 
     # Store growth stimuli and setpoints
     model.growth.s_l[model.growth.i_g, :] = s_f

@@ -176,6 +176,14 @@ def get_outputs(model, time_g=0, match_strain=False):
     co_rv = sv_rv / model.time[-1] * 60 / 1e3  # [L/min]
     hr = 60 / model.time[-1]  # [s]
 
+    # Volume rates
+    dvdt_lv = np.gradient(model.volumes[:, 2], model.time)
+    dvdt_rv = np.gradient(model.volumes[:, 6], model.time)
+    pfr_lv = np.max(dvdt_lv)  # Maximum positive rate (filling)
+    per_lv = np.abs(np.min(dvdt_lv))  # Maximum negative rate → positive(ejection)
+    pfr_rv = np.max(dvdt_rv)
+    per_rv = np.abs(np.min(dvdt_rv))
+
     # Calculate regurgitation fraction
     rf, rf_rv = get_rf(model)
 
@@ -230,6 +238,7 @@ def get_outputs(model, time_g=0, match_strain=False):
                              ef_rv, co_rv, ed_wth[0], ed_wth[1], ed_wth[2], es_wth[0], es_wth[1], es_wth[2],
                              dlv_sw, drv_sw, drvi, dlv_sw/drv_sw, dlv_sw/drvi, drv_sw/drvi, lvwv, rvwv,
                              lvedd, lvesd, lvfs, rvedd, rvesd, rvfs,
+                             pfr_lv, per_lv, pfr_rv, per_rv,
                              lab_ed_lfw, lab_ed_rfw, lab_ed_sw, lab_ed_la, lab_ed_ra,
                              lab_max_lfw, lab_max_rfw, lab_max_sw, lab_max_la, lab_max_ra,
                              sig_max_lfw, sig_max_rfw, sig_max_sw, sig_max_la, sig_max_ra,
@@ -243,6 +252,7 @@ def get_outputs(model, time_g=0, match_strain=False):
                                  'EDWthLfw', 'EDWthRfw', 'EDWthSw', 'ESWthLfw', 'ESWthRfw', 'ESWthSw',
                                  'Dlvsw', 'Drvsw', 'Drvi', 'DlvswDrvsw', 'DlvswDrvi', 'DrvswDrvi', 'LVWV', 'RVWV',
                                  'LVEDD', 'LVESD', 'LVFS', 'RVEDD', 'RVESD', 'RVFS',
+                                 'LVPFR', 'LVPER', 'RVPFR', 'RVPER',
                                  'EDStretchLfw', 'EDStretchRfw', 'EDStretchSw', 'EDStretchLA', 'EDStretchRA',
                                  "MaxStretchLfw", "MaxStretchRfw", "MaxStretchSw", "MaxStretchLA", "MaxStretchRA",
                                  "MaxStressLfw", "MaxStressRfw", "MaxStressSw", "MaxStressLA", "MaxStressRA",
@@ -453,6 +463,8 @@ def change_pars(model, pars):
                 model.heart.am_ref[patch] = value
             elif par == "vw":
                 model.heart.vw[patch] = value
+            elif par == "ischemic":
+                model.heart.sf_act[patch] = 0.0         # Ischemic patch has zero active stress
 
         # Timing properties, atriaventricular delay and intraventricular delay (between lfw/rfw and septum)
         if par == "avd":
@@ -690,6 +702,21 @@ def get_pars(model, pars):
             values[par_name] = model.resistances.rmvb
         elif par_name == "rtvb":
             values[par_name] = model.resistances.rtvb
+
+        # Change all circulation parameters based on body surface area using allometric scaling
+        elif par_name == "bsa":
+            model.resistances.rvp = model.resistances.rvp * (values["bsa"] / model.circulation.bsa)**(-3/4)
+            model.resistances.rcs = model.resistances.rcs * (values["bsa"] / model.circulation.bsa) ** (-3 / 4)
+            model.resistances.ras = model.resistances.ras * (values["bsa"] / model.circulation.bsa) ** (-3 / 4)
+            model.resistances.rvs = model.resistances.rvs * (values["bsa"] / model.circulation.bsa) ** (-3 / 4)
+            model.resistances.rcp = model.resistances.rcp * (values["bsa"] / model.circulation.bsa) ** (-3 / 4)
+            model.resistances.rap = model.resistances.rap * (values["bsa"] / model.circulation.bsa) ** (-3 / 4)
+            model.resistances.rav = model.resistances.rav * (values["bsa"] / model.circulation.bsa) ** (-3 / 4)
+
+            model.capacitance.cvp = model.capacitance.cvp * (values["bsa"] / model.circulation.bsa) ** (-4 / 3)
+            model.capacitance.cas = model.capacitance.cas * (values["bsa"] / model.circulation.bsa) ** (-4 / 3)
+            model.capacitance.cap = model.capacitance.cap * (values["bsa"] / model.circulation.bsa) ** (-4 / 3)
+            model.capacitance.cvs = model.capacitance.cvs * (values["bsa"] / model.circulation.bsa) ** (-4 / 3)
 
         elif par_name == "sact":
             values[par_name] = model.heart.sf_act[i_ventricles==0][0]
