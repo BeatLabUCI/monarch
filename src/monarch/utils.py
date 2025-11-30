@@ -161,6 +161,11 @@ def get_outputs(model, time_g=0, match_strain=False):
     lab_max_sw = np.max(model.heart.lab_f[:, model.heart.patches == 2])
     lab_max_la = np.max(model.heart.lab_f[:, model.heart.patches == 3])
     lab_max_ra = np.max(model.heart.lab_f[:, model.heart.patches == 4])
+    lab_min_lfw = np.min(model.heart.lab_f[:, model.heart.patches == 0])
+    lab_min_rfw = np.min(model.heart.lab_f[:, model.heart.patches == 1])
+    lab_min_sw = np.min(model.heart.lab_f[:, model.heart.patches == 2])
+    lab_min_la = np.min(model.heart.lab_f[:, model.heart.patches == 3])
+    lab_min_ra = np.min(model.heart.lab_f[:, model.heart.patches == 4])
     sig_max_lfw = np.max(model.heart.sig_f[:, model.heart.patches == 0])
     sig_max_rfw = np.max(model.heart.sig_f[:, model.heart.patches == 1])
     sig_max_sw = np.max(model.heart.sig_f[:, model.heart.patches == 2])
@@ -192,17 +197,30 @@ def get_outputs(model, time_g=0, match_strain=False):
     sbp = max(model.pressures[:, 3])
     dbp = min(model.pressures[:, 3])
 
-    # Get geometry: LV-SW endocardial distance, endocardial RV-SW distance, and distance between RV insertions
-    # Needs to be improved: now half of each wall thickness is substracted but this is not accurate at midwall radius
+    # Get geometry: LV-SW endocardial distance, RV-SW endocardial distance, and RV insertion distance
+    # In TriSeg geometry: xm[0]=LFW axial position, xm[1]=RFW axial position, xm[2]=SW axial position
+    #                     ys = radial distance between RV insertion points (already a diameter)
+
+    # AXIAL distance from LV endocardium to septal endocardium (measured along x-axis at apex)
     dlv_sw = model.heart.xm[ed_frame, 2] - model.heart.xm[ed_frame, 0] - 0.5*(ed_wth[0] + ed_wth[2])
+
+    # AXIAL distance from RV endocardium to septal endocardium (measured along x-axis)
     drv_sw = model.heart.xm[ed_frame, 1] - model.heart.xm[ed_frame, 2] - 0.5*(ed_wth[2] + ed_wth[1])
+
+    # RADIAL distance between RV insertion points (measured perpendicular to x-axis)
+    # Note: ys is already the full diameter, not radius (see heart.py:345)
     drvi = model.heart.ys_store[ed_frame]
 
+    # WARNING: dlv_sw and drv_sw are AXIAL distances, but drvi is a RADIAL distance
+    # Ratios DlvswDrvsw, DlvswDrvi, DrvswDrvi mix orthogonal geometric dimensions
+    # Consider using cavity diameters based on rm (radius of curvature) for consistency
+
     # ED and ES diameter for LV and RV
+    # rm[frame, 0] = LFW radius, rm[frame, 1] = RFW radius, rm[frame, 2] = SW radius
     lvedd = 2*(abs(model.heart.rm[ed_frame, 0]) - ed_wth[0])
     rvedd = 2*(abs(model.heart.rm[ed_frame_rv, 1]) - ed_wth[1])
     lvesd = 2*(abs(model.heart.rm[es_frame, 0]) - es_wth[0])
-    rvesd = 2*(abs(model.heart.rm[es_frame_rv, 0]) - es_wth[1])
+    rvesd = 2*(abs(model.heart.rm[es_frame_rv, 1]) - es_wth[1])  # Fixed: was using index 0 instead of 1
     lvfs = (lvedd - lvesd) / lvedd * 100
     rvfs = (rvedd - rvesd) / rvedd * 100
 
@@ -231,6 +249,24 @@ def get_outputs(model, time_g=0, match_strain=False):
     # aorta-to-vein pressure drop (LVCO / Ras)
     co_ras = co / model.resistances.ras
 
+    # Get shortening for each patch
+    diff_stretch = np.zeros(len(model.heart.patches))
+    for i in range(len(model.heart.patches)):
+        # Find the minimum value and its index
+        min_stretch = np.min(model.heart.lab_f[:, i])
+        min_index = np.argmin(model.heart.lab_f[:, i])
+
+        # Find the maximum value with constraints based on ed_frame and min_index
+        if min_index > ed_frame:
+            # If min occurs after ed_frame, find max between ed_frame and min_index
+            max_stretch = np.max(model.heart.lab_f[ed_frame:min_index, i])
+        else:
+            max_stretch_after_ed = np.max(model.heart.lab_f[ed_frame:, i])
+            max_stretch_before_min = np.max(model.heart.lab_f[:min_index, i])
+            max_stretch = max(max_stretch_after_ed, max_stretch_before_min)
+
+        # max_stretch = np.max(model.heart.lab_f[:, i])
+        diff_stretch[i] = max_stretch - min_stretch
 
     # Turn into pandas
     outputs = pd.DataFrame([[edv, esv, edp, esp, p_max, dpdt_max, dpdt_min, sv, rf, ef, co,
@@ -241,9 +277,12 @@ def get_outputs(model, time_g=0, match_strain=False):
                              pfr_lv, per_lv, pfr_rv, per_rv,
                              lab_ed_lfw, lab_ed_rfw, lab_ed_sw, lab_ed_la, lab_ed_ra,
                              lab_max_lfw, lab_max_rfw, lab_max_sw, lab_max_la, lab_max_ra,
+                             lab_min_lfw, lab_min_rfw, lab_min_sw, lab_min_la, lab_min_ra,
+                                lab_max_lfw - lab_min_lfw, lab_max_rfw - lab_min_rfw, lab_max_sw - lab_min_sw,
                              sig_max_lfw, sig_max_rfw, sig_max_sw, sig_max_la, sig_max_ra,
                              time_events['LVIVCT'], time_events['LVIVRT'], time_events['LVET'], time_events['LVFT'],
                              time_events['RVIVCT'], time_events['RVIVRT'], time_events['RVET'], time_events['RVFT'],
+                             time_events['mv_closes'], time_events['av_closes'],
                              map, hr, dbp, sbp, ed_frame, es_frame, ed_time, es_time, ed_frame_rv, es_frame_rv,
                              ed_time_rv, es_time_rv, lap,
                              edv_i, esv_i, rvedv_i, rvesv_i, work_lfw, work_sw, co_ras], ],
@@ -255,9 +294,12 @@ def get_outputs(model, time_g=0, match_strain=False):
                                  'LVPFR', 'LVPER', 'RVPFR', 'RVPER',
                                  'EDStretchLfw', 'EDStretchRfw', 'EDStretchSw', 'EDStretchLA', 'EDStretchRA',
                                  "MaxStretchLfw", "MaxStretchRfw", "MaxStretchSw", "MaxStretchLA", "MaxStretchRA",
+                                 "MinStretchLfw", "MinStretchRfw", "MinStretchSw", "MinStretchLA", "MinStretchRA",
+                                 "DiffStretchLfw", "DiffStretchRfw", "DiffStretchSw",
                                  "MaxStressLfw", "MaxStressRfw", "MaxStressSw", "MaxStressLA", "MaxStressRA",
                                  'LVIVCT', 'LVIVRT', 'LVET', 'LVFT',
                                  'RVIVCT', 'RVIVRT', 'RVET', 'RVFT',
+                                 'mvc', 'avc',
                                  'MAP', 'HR', 'DBP', 'SBP',
                                  'IED', 'IES', 'TED', 'TES', 'IED_RV', 'IES_RV', 'TED_RV', 'TES_RV', 'LAP',
                                  'LVEDVi', 'LVESVi', 'RVEDVi', 'RVESVi', 'WorkLfw', 'WorkSw', 'CO_Ras'],
@@ -436,8 +478,35 @@ def change_pars(model, pars):
             elif par == "tact" + chamber_names[i]:
                 model.heart.t_act = value
 
-        # Set parameter for specific patches
-        if "_s" in par:
+        # Set parameter for specific wall regions (lfw, sw, rfw)
+        wall_suffixes = {"_lfw": 0, "_sw": 2, "_rfw": 1}
+        wall_suffix_found = False
+        for suffix, patch_id in wall_suffixes.items():
+            if par.endswith(suffix):
+                wall_suffix_found = True
+                base_par = par[:-len(suffix)]  # Remove suffix to get base parameter name
+                patch_mask = model.heart.patches == patch_id
+
+                if base_par == "sact" or base_par == "sfact":
+                    model.heart.sf_act[patch_mask] = value
+                elif base_par == "tad":
+                    model.heart.t_ad[patch_mask] = value
+                elif base_par == "td":
+                    model.heart.tau_d[patch_mask] = value
+                elif base_par == "tr":
+                    model.heart.tau_r[patch_mask] = value
+                elif base_par == "c1":
+                    model.heart.c_1[patch_mask] = value
+                elif base_par == "c3":
+                    model.heart.c_3[patch_mask] = value
+                elif base_par == "c4":
+                    model.heart.c_4[patch_mask] = value
+                elif base_par == "tact":
+                    model.heart.t_act[patch_mask] = value
+                break
+
+        # Set parameter for specific patches (by index)
+        if "_s" in par and not wall_suffix_found:
             # Par name and patch number
             patch = int(par.split("_s")[1])
             par = par.split("_")[0]
@@ -635,10 +704,16 @@ def change_pars(model, pars):
 
 
 def list_change_pars():
-    """Return list of parameters that can be changed using change_pars()"""
+    """Return list of parameters that can be changed using change_pars()
+
+    Note: Parameters with suffixes _lfw, _sw, _rfw apply to left free wall, septum wall,
+    and right free wall patches respectively. For example: sfact_lfw, tad_sw, c1_rfw.
+    Supported parameters for wall-specific suffixes: sfact/sact, tad, td, tr, c1, c3, c4, tact.
+    """
     return ["sbv", "hr", "k_initial", "cvp", "cas", "cap", "cvs", "rvp", "rcs", "ras", "rvs", "rcp", "rap", "rav",
             "rmvb", "rtvb", "sact", "sfact", "tad", "td", "tr", "c1", "c3", "c4", "tact", "sact_a", "sfact_a", "tad_a",
-            "td_a", "tr_a", "c1_a", "c3_a", "c4_a", "tact_a", "avd", "ivd_lv", "ivd_rv", "wth_p", "c1_p", "c3_p",
+            "td_a", "tr_a", "c1_a", "c3_a", "c4_a", "tact_a", "sfact_lfw", "sfact_sw", "sfact_rfw", "tad_lfw", "tad_sw",
+            "tad_rfw", "avd", "ivd_lv", "ivd_rv", "wth_p", "c1_p", "c3_p",
             "c4_p", "prestretch", "amreflfw", "amrefrfw", "amrefsw", "amrefla", "amrefra", "vlfw", "vrfw", "vsw",
             "vla", "vra", "fgmaxf+", "fgmaxf-", "nf+", "nf-", "s50f+", "s50f-", "fgmaxr+", "fgmaxr-", "nr+", "nr-",
             "s50r+", "s50r-", "t_mem", "tau_f-", "tau_f_min", "tau_f+", "tau_f_max", "tau_r-", "tau_r+", "tau_r_min",
