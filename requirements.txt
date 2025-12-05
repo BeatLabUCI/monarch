@@ -1,5 +1,6 @@
 jupyterlab
-voila
+voila==0.3.8
+nbconvert==7.14.0
 numpy
 matplotlib
 ipywidgets
