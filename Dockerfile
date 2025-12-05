@@ -15,4 +15,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 8000
 
 # Run Voilà with Render's dynamic port and material template
-CMD ["sh", "-c", "voila monarch-docs/docs/monarch_starter_interactive.ipynb --port=$PORT --no-browser --template=material --Voila.ip=0.0.0.0"]
+# Bind to 0.0.0.0 so Render can detect the open port
+CMD ["sh", "-c", "voila monarch-docs/docs/monarch_starter_interactive.ipynb --port=${PORT:-10000} --no-browser --template=material --Voila.ip=0.0.0.0 --Voila.base_url=/ --Voila.allow_origin=*"]
