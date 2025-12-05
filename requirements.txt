@@ -1,6 +1,7 @@
 jupyterlab
-voila==0.3.8
-nbconvert==7.14.0
+voila==0.5.5
+nbconvert>=6.5.0
 numpy
 matplotlib
 ipywidgets
+voila-material
