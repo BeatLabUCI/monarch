@@ -16,4 +16,4 @@ EXPOSE 8000
 
 # Run Voilà with Render's dynamic port
 # Bind to 0.0.0.0 so Render can detect the open port
-CMD ["sh", "-c", "voila monarch-docs/docs/monarch_starter_interactive.ipynb --port=${PORT:-10000} --no-browser --template=material --VoilaConfiguration.ip=0.0.0.0"]
+CMD ["sh", "-c", "voila monarch-docs/docs/monarch_starter_interactive.ipynb --port=${PORT:-10000} --no-browser --ServerApp.ip=0.0.0.0 --template=lab"]
