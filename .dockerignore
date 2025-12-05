@@ -1,0 +1,55 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# IDE files
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+.eggs
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb_checkpoints
+
+# Documentation build artifacts (if you have them)
+docs/_build
+site/
+
+# Examples and notebooks (not needed for the deployed app)
+examples/
+notebooks/
+
+# Test files
+tests/
+.pytest_cache
+.coverage
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Misc
+*.log
+.env
+*.bak
