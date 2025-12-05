@@ -12,8 +12,11 @@ RUN apt-get update && apt-get install -y build-essential && apt-get clean
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Expose the port Voilà will run on (Render sets PORT env var)
-EXPOSE 8000
+EXPOSE $PORT
+
+# Set environment variable to bind to all interfaces
+ENV JUPYTER_IP=0.0.0.0
 
 # Run Voilà with Render's dynamic port
 # Bind to 0.0.0.0 so Render can detect the open port
-CMD ["sh", "-c", "voila monarch-docs/docs/monarch_starter_interactive.ipynb --port=${PORT:-10000} --no-browser --ServerApp.ip=0.0.0.0 --template=lab"]
+CMD ["sh", "-c", "voila monarch-docs/docs/monarch_starter_interactive.ipynb --port=$PORT --no-browser --Voila.ip=0.0.0.0 --template=lab"]
