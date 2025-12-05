@@ -28,8 +28,12 @@ dependencies = [
     "matplotlib>=3.8.4",
     "jupyter",
     "jupyterlab",
+    "ipywidgets>=8.0.0",
 ]
 
 [project.urls]
 Homepage = "https://github.com/beatlab/monarch"
 Issues = "https://github.com/beatlab/monarch/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/monarch"]
