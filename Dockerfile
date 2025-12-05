@@ -22,4 +22,4 @@ ENV JUPYTER_IP=0.0.0.0
 
 # Run Voilà with Render's dynamic port
 # Bind to 0.0.0.0 so Render can detect the open port
-CMD ["sh", "-c", "voila monarch-docs/docs/monarch_starter_interactive.ipynb --port=$PORT --no-browser --Voila.ip=0.0.0.0 --template=lab"]
+CMD sh -c "voila monarch-docs/docs/monarch_starter_interactive.ipynb --port=$PORT --no-browser --Voila.ip=0.0.0.0 --template=lab"
