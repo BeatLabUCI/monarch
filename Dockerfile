@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y build-essential && apt-get clean
 # Install Python packages
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install the monarch package from the current directory
+RUN pip install --no-cache-dir .
+
 # Expose the port Voilà will run on (Render sets PORT env var)
 EXPOSE $PORT
 
