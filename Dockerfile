@@ -14,8 +14,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY setup.py pyproject.toml ./
 COPY src/ ./src/
 
-# Install the monarch package
-RUN pip install --no-cache-dir .
+# Install build dependencies and the monarch package
+RUN pip install --no-cache-dir hatchling && \
+    pip install --no-cache-dir .
 
 # Copy the rest of the application (notebooks, docs, etc.)
 COPY monarch-docs/ ./monarch-docs/
