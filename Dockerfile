@@ -10,8 +10,8 @@ RUN apt-get update && apt-get install -y build-essential && apt-get clean && rm 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy setup files for the monarch package
-COPY setup.py pyproject.toml ./
+# Copy setup files for the monarch package (including LICENSE and README for metadata)
+COPY setup.py pyproject.toml LICENSE README.md ./
 COPY src/ ./src/
 
 # Install build dependencies and the monarch package
@@ -20,7 +20,6 @@ RUN pip install --no-cache-dir hatchling && \
 
 # Copy the rest of the application (notebooks, docs, etc.)
 COPY monarch-docs/ ./monarch-docs/
-COPY README.md LICENSE ./
 
 # Expose the port Voilà will run on (Render sets PORT env var)
 EXPOSE $PORT
